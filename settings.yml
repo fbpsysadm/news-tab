@@ -1,0 +1,4 @@
+api_url:
+  default: "https://formatjsononline.com/api/products"
+  type: string
+  description: "News API endpoint URL returning data.news"
