@@ -79,13 +79,20 @@ export default apiInitializer("1.8.0", (api) => {
       return;
     }
 
-    const items = newsItems
+    // fileter out news items from "半岛" publisher
+    const filteredNewsItems = newsItems.filter((item) => item?.publisher !== "半岛");
+
+    if (!filteredNewsItems.length) {
+      container.innerHTML = '<div class="news-empty">No news available.</div>';
+      return;
+    }
+
+    const items = filteredNewsItems
       .map((item) => {
         const title = item.title || "Untitled";
-        const publisher = item.publisher || "Unknown brand";
-        const url = item.url || "Uncategorized";
+        const publisher = item.publisher || "Unknown";
+        const url = item.url || "#";
         const pub_date = item.pub_date ? new Date(item.pub_date).toLocaleString() : "";
-      
         const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""}</div>`;
         const description = item.description ? `<p class="news-summary">${item.description}</p>` : "";
         return `<li class="news-item"><div class="news-title"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
@@ -95,21 +102,23 @@ export default apiInitializer("1.8.0", (api) => {
     container.innerHTML = `<ul class="news-list">${items}</ul>`;
   }
 
-// {
-//   "success": true,
-//   "data": {
-//     "news": [
-//       {
-//         "title": "乌克兰被俘朝鲜士兵想去韩国 首尔态度迟疑",
-//         "publisher": "德国之声",
-//         "url": "https://www.dw.com/zh/乌克兰被俘朝鲜士兵想去韩国-首尔态度迟疑/a-76094690",
-//         "pub_date": "2026-02-23T15:19:00Z",
-//         "description": "两名在乌克兰被俘的朝鲜士兵表示希望前往韩国，而不是返回朝鲜面对可能的严厉惩罚。相关人士指出，朝鲜政权甚至可能选择惩罚其家属。人权人士批评首尔在接收问题上行动迟缓。"
-//       },
-//       ...    
-//     ],
-// }
-  
+
+  // {
+  //   "success": true,
+  //   "data": {
+  //     "news": [
+  //       {
+  //         "title": "乌克兰被俘朝鲜士兵想去韩国 首尔态度迟疑",
+  //         "publisher": "德国之声",
+  //         "url": "https://www.dw.com/zh/乌克兰被俘朝鲜士兵想去韩国-首尔态度迟疑/a-76094690",
+  //         "pub_date": "2026-02-23T15:19:00Z",
+  //         "description": "两名在乌克兰被俘的朝鲜士兵表示希望前往韩国，而不是返回朝鲜面对可能的严厉惩罚。相关人士指出，朝鲜政权甚至可能选择惩罚其家属。人权人士批评首尔在接收问题上行动迟缓。"
+  //       },
+  //       ...    
+  //     ],
+  // }  
+
+
   function fetchNews(container) {
     if (newsLoaded) {
       renderNews(container);
@@ -117,9 +126,9 @@ export default apiInitializer("1.8.0", (api) => {
     }
 
     container.innerHTML = '<div class="news-empty">Loading news...</div>';
-    // const apiUrl = "https://formatjsononline.com/api/products";
-    const apiUrl = "";  
-    fetch(apiUrl)
+    const apiUrl = settings?.api_url?.trim() || "https://formatjsononline.com/api/products";
+
+    fetch(apiUrl)    
       .then((response) => response.json())
       .then((data) => {
         newsItems = Array.isArray(data?.data?.news) ? data.data.news : [];
