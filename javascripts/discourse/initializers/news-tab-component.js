@@ -117,9 +117,9 @@ export default apiInitializer("1.8.0", (api) => {
     }
 
     container.innerHTML = '<div class="news-empty">Loading news...</div>';
-    // url = "https://formatjsononline.com/api/products";
-    url = "";
-    fetch(url)
+    // const apiUrl = "https://formatjsononline.com/api/products";
+    const apiUrl = "";  
+    fetch(apiUrl)
       .then((response) => response.json())
       .then((data) => {
         newsItems = Array.isArray(data?.data?.news) ? data.data.news : [];
