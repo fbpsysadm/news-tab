@@ -99,7 +99,15 @@ export default apiInitializer("1.8.0", (api) => {
       })
       .join("");
 
-    container.innerHTML = `<ul class="news-list">${items}</ul>`;
+    // Add the game div after the news list
+    const game_div = `
+      <div>
+      <iframe allowfullscreen="true" scrolling="no" width="1400" height="400"
+        src="https://www.spiele-umsonst.de/azad/downloads/html5games/skill/bubbleshooterclassic/" frameborder="0"></iframe>
+      </div>
+    `;
+
+    container.innerHTML = `<ul class="news-list">${items}</ul>${game_div}`;
   }
 
 
