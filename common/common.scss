@@ -1,0 +1,53 @@
+/*
+  Add custom styles for the News tab here
+*/
+.news-tab {
+  padding: 0em;
+}
+.news-list {
+  list-style: none;
+  padding: 0;
+}
+.news-item {
+  margin-bottom: 1.5em;
+}
+.news-title {
+  font-weight: bold;
+  color: #0077cc;
+}
+.news-item a {
+  font-weight: bold;
+  color: #0077cc;
+  text-decoration: none;
+}
+.news-item a:hover {
+  text-decoration: underline;
+}
+.news-meta {
+  margin-top: 0.35em;
+  color: #666;
+  font-size: 0.9em;
+}
+.news-summary {
+  margin: 0.5em 0 0 0;
+  color: #555;
+}
+.news-error {
+  color: #c00;
+  font-weight: bold;
+}
+.news-empty {
+  color: #888;
+}
+
+.nav-item-news.active a,
+.nav-item-news a.active {
+  text-decoration: underline;
+}
+
+@media (max-width: 767px) {
+  .nav-item-news,
+  .news-tab {
+    display: none !important;
+  }
+}
