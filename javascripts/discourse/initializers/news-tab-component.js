@@ -99,7 +99,7 @@ export default apiInitializer("1.8.0", (api) => {
         const pub_date = item.pub_date ? new Date(item.pub_date).toLocaleString() : "";
 
         // for creating a topic for the news
-        const topicBody = `${descriptionText}${descriptionText ? "\n\n" : ""}${url}`;
+        const topicBody = `\n\n>${descriptionText}${descriptionText ? "\n\n" : ""}${url}`;
         const createTopicUrl = `https://www.freeblueplanet.com/new-topic?title=${encodeURIComponent(title)}&body=${encodeURIComponent(topicBody)}`;
         const createTopicLink = `<span class="news-create-topic"><a href="${createTopicUrl}" target="_blank" rel="noopener noreferrer">${createTopicIcon}</a></div>`;
 
