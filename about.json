@@ -1,0 +1,5 @@
+{
+  "name": "News Tab Component",
+  "about": "Adds a News tab after Categories in the navigation bar, fetching and displaying news from an external JSON endpoint.",
+  "component": true
+}
