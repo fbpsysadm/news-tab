@@ -96,12 +96,12 @@ export default apiInitializer("1.8.0", (api) => {
         const url = item.url || "#";
         const descriptionText = item.description || "";
         const pub_date = item.pub_date ? new Date(item.pub_date).toLocaleString() : "";
-        const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""}</div>`;
-        const description = descriptionText ? `<p class="news-summary">${descriptionText}</p>` : "";
-        const topicBody = `${descriptionText}${descriptionText ? "\n\n" : ""}${url}`;
         const createTopicUrl = `https://www.freeblueplanet.com/new-topic?title=${encodeURIComponent(title)}&body=${encodeURIComponent(topicBody)}`;
         const createTopicLink = `<div class="news-create-topic"><a href="${createTopicUrl}" target="_blank" rel="noopener noreferrer">${createTopicIcon}</a></div>`;
-        return `<li class="news-item"><div class="news-title"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}${createTopicLink}</li>`;
+        const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""}  ${createTopicLink}</div>`;
+        const description = descriptionText ? `<p class="news-summary">${descriptionText}</p>` : "";
+        const topicBody = `${descriptionText}${descriptionText ? "\n\n" : ""}${url}`;
+        return `<li class="news-item"><div class="news-title"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
       })
       .join("");
 
