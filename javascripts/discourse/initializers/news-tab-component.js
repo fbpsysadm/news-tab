@@ -263,6 +263,18 @@ export default apiInitializer("1.8.0", (api) => {
     }
   }
 
+  function resetNewsMode() {
+    hideNewsTab();
+
+    const navList = getNavList();
+    const newsItem = navList?.querySelector(".nav-item-news");
+    const link = newsItem?.querySelector('a[href="#news"]');
+
+    if (navList && newsItem && link) {
+      deactivateNewsTab(navList, newsItem, link);
+    }
+  }
+
   function injectNewsTab() {
     if (!isDiscoveryPage()) {
       return;
@@ -331,7 +343,11 @@ export default apiInitializer("1.8.0", (api) => {
   }
 
   api.onPageChange(() => {
-    setTimeout(injectNewsTab, 0);
+    resetNewsMode();
+    setTimeout(() => {
+      injectNewsTab();
+      resetNewsMode();
+    }, 0);
     preloadNewsInBackground();
   });
 
