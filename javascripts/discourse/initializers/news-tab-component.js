@@ -346,7 +346,6 @@ export default apiInitializer("1.8.0", (api) => {
     resetNewsMode();
     setTimeout(() => {
       injectNewsTab();
-      resetNewsMode();
     }, 0);
     preloadNewsInBackground();
   });
