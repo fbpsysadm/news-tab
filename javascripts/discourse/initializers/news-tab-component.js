@@ -254,6 +254,15 @@ export default apiInitializer("1.8.0", (api) => {
     const link = document.createElement("a");
     link.href = "#news";
     link.textContent = "新闻";
+
+    const templateNavLink = navList.querySelector("a");
+    if (templateNavLink) {
+      link.className = Array.from(templateNavLink.classList)
+        .filter((className) => className !== "active")
+        .join(" ");
+    }
+
+    
     link.addEventListener("click", (event) => {
       event.preventDefault();
 
