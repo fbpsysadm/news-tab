@@ -21,6 +21,7 @@ export default apiInitializer("1.8.0", (api) => {
   let newsLoaded = false;
   let newsLoading = false;
   let newsFetchPromise = null;
+  let isNewsTabActive = false;
   let newsItems = [];
   let newsError = null;
 
@@ -206,6 +207,8 @@ export default apiInitializer("1.8.0", (api) => {
       return;
     }
 
+    isNewsTabActive = true;
+
     container.style.display = "block";
 
     discoverySelectorsToHide.forEach((selector) => {
@@ -226,6 +229,8 @@ export default apiInitializer("1.8.0", (api) => {
   }
 
   function hideNewsTab() {
+    isNewsTabActive = false;
+
     const container = document.querySelector(".news-tab");
     if (container) {
       container.style.display = "none";
@@ -263,16 +268,25 @@ export default apiInitializer("1.8.0", (api) => {
     }
   }
 
-  function resetNewsMode() {
-    hideNewsTab();
-
+  function syncNewsTabState() {
     const navList = getNavList();
     const newsItem = navList?.querySelector(".nav-item-news");
     const link = newsItem?.querySelector('a[href="#news"]');
 
-    if (navList && newsItem && link) {
+    if (!navList || !newsItem || !link) {
+      return;
+    }
+
+    if (isNewsTabActive) {
+      activateNewsTab(navList, newsItem, link);
+    } else {
       deactivateNewsTab(navList, newsItem, link);
     }
+  }
+
+  function resetNewsMode() {
+    hideNewsTab();
+    syncNewsTabState();
   }
 
   function injectNewsTab() {
@@ -313,6 +327,7 @@ export default apiInitializer("1.8.0", (api) => {
     
     link.addEventListener("click", (event) => {
       event.preventDefault();
+      event.stopPropagation();
 
       activateNewsTab(navList, newsItem, link);
 
@@ -331,21 +346,30 @@ export default apiInitializer("1.8.0", (api) => {
       navList.appendChild(newsItem);
     }
 
-    navList.addEventListener("click", (event) => {
-      const targetLink = event.target.closest("a");
-      if (!targetLink || targetLink === link) {
-        return;
-      }
+    if (!navList.dataset.newsTabListenerBound) {
+      navList.dataset.newsTabListenerBound = "true";
+      navList.addEventListener("click", (event) => {
+        const targetLink = event.target.closest("a");
+        if (!targetLink || targetLink.getAttribute("href") === "#news") {
+          return;
+        }
 
-      hideNewsTab();
-      deactivateNewsTab(navList, newsItem, link);
-    });
+        hideNewsTab();
+
+        const currentNewsItem = navList.querySelector(".nav-item-news");
+        const currentNewsLink = currentNewsItem?.querySelector('a[href="#news"]');
+        if (currentNewsItem && currentNewsLink) {
+          deactivateNewsTab(navList, currentNewsItem, currentNewsLink);
+        }
+      });
+    }
   }
 
   api.onPageChange(() => {
     resetNewsMode();
     setTimeout(() => {
       injectNewsTab();
+      syncNewsTabState();
     }, 0);
     preloadNewsInBackground();
   });
