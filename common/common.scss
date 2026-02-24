@@ -21,7 +21,7 @@
   text-decoration: none;
 }
 .news-item a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 .news-meta {
   margin-top: 0.35em;
@@ -42,7 +42,7 @@
 
 .nav-item-news.active a,
 .nav-item-news a.active {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 @media (max-width: 767px) {
