@@ -19,6 +19,8 @@ export default apiInitializer("1.8.0", (api) => {
   ];
 
   let newsLoaded = false;
+  let newsLoading = false;
+  let newsFetchPromise = null;
   let newsItems = [];
   let newsError = null;
 
@@ -141,27 +143,61 @@ export default apiInitializer("1.8.0", (api) => {
 
   function fetchNews(container) {
     if (newsLoaded) {
-      renderNews(container);
-      return;
+      if (container) {
+        renderNews(container);
+      }
+      return Promise.resolve();
     }
 
-    container.innerHTML = '<div class="news-empty">Loading news...</div>';
+    if (container && !newsLoading) {
+      container.innerHTML = '<div class="news-empty">Loading news...</div>';
+    }
+
+    if (newsLoading && newsFetchPromise) {
+      return newsFetchPromise.then(() => {
+        if (container) {
+          renderNews(container);
+        }
+      });
+    }
+
+    newsLoading = true;
     const apiUrl = settings?.api_url?.trim() || "https://formatjsononline.com/api/products";
 
-    fetch(apiUrl)    
+    newsFetchPromise = fetch(apiUrl)
       .then((response) => response.json())
       .then((data) => {
         newsItems = Array.isArray(data?.data?.news) ? data.data.news : [];
         newsError = newsItems.length ? null : "No news found in data.news.";
         newsLoaded = true;
-        renderNews(container);
       })
       .catch(() => {
         newsItems = [];
         newsError = "Failed to load news.";
         newsLoaded = true;
-        renderNews(container);
+      })
+      .finally(() => {
+        newsLoading = false;
       });
+
+    return newsFetchPromise.then(() => {
+      if (container) {
+        renderNews(container);
+      }
+    });
+  }
+
+  function preloadNewsInBackground() {
+    if (newsLoaded || newsLoading || !isDiscoveryPage() || !isDesktopBrowser()) {
+      return;
+    }
+
+    const runPreload = () => fetchNews();
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(runPreload, { timeout: 1500 });
+    } else {
+      setTimeout(runPreload, 0);
+    }
   }
 
   function showNewsTab() {
@@ -296,6 +332,7 @@ export default apiInitializer("1.8.0", (api) => {
 
   api.onPageChange(() => {
     setTimeout(injectNewsTab, 0);
+    preloadNewsInBackground();
   });
 
   window.addEventListener("resize", () => {
