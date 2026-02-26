@@ -146,7 +146,7 @@ export default apiInitializer("1.8.0", (api) => {
     }
 
     if (container && !newsLoading) {
-      container.innerHTML = '<div class="news-empty">Loading news...</div>';
+      container.innerHTML = '<div class="news-empty">Loading news... it may take several seconds.</div>';
     }
 
     if (newsLoading && newsFetchPromise) {
