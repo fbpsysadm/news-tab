@@ -29,12 +29,6 @@ export default apiInitializer("1.8.0", (api) => {
     return /^\/(latest|new|unread|top|categories)?(?:\?.*)?$/.test(window.location.pathname + window.location.search);
   }
 
-  function isDesktopBrowser() {
-    const body = document.body;
-    const isMobileClass = body?.classList.contains("mobile-view") || body?.classList.contains("mobile-device");
-    const isSmallViewport = window.matchMedia("(max-width: 767px)").matches;
-    return !isMobileClass && !isSmallViewport;
-  }
 
   function getNavList() {
     return (
@@ -82,7 +76,6 @@ export default apiInitializer("1.8.0", (api) => {
       return;
     }
 
-    // fileter out news items from "半岛" publisher
     const filteredNewsItems = newsItems //.filter((item) => item?.publisher !== "半岛");
 
     if (!filteredNewsItems.length) {
@@ -102,27 +95,28 @@ export default apiInitializer("1.8.0", (api) => {
         const pub_date = item.pub_date ? new Date(item.pub_date).toLocaleString() : "";
 
         // for creating a topic for the news
-        const topicBody = `\n\n>${descriptionText}${descriptionText ? "\n\n" : ""}${url}`;
+        const topicBody = `\n\n>${descriptionText}${descriptionText ? "\n\n" : ""}\n${url}`;
         const createTopicUrl = `https://www.freeblueplanet.com/new-topic?title=${encodeURIComponent(title)}&body=${encodeURIComponent(topicBody)}`;
         // target="_blank"  // this open a new windows, but slower.
-        const createTopicLink = `<span class="news-create-topic"><a href="${createTopicUrl}" rel="noopener noreferrer">${createTopicIcon}</a></div>`;
+        const createTopicLink = `<span class="news-create-topic"><a href="${createTopicUrl}" rel="noopener noreferrer" title="发帖聊天">${createTopicIcon}</a></div>`;        
 
         // meta is the subtitle line, description is the news summary
-        const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""}  ${createTopicLink}</div>`;
+        const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""} &nbsp; ${createTopicLink}</div>`;
         const description = descriptionText ? `<p class="news-summary">${descriptionText}</p>` : "";
-        return `<li class="news-item"><div class="news-title"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
+        return `<li class="news-item"><hr><div class="news-title"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
+        //return `<li class="news-item"><div class="title raw-link raw-topic-link"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
       })
       .join("");
 
     // Add the game div after the news list
     const game_div = `
-      <div>
-      <iframe allowfullscreen="true" scrolling="no" width="1400" height="400"
+      <div class="news-game">
+      <iframe class="news-game-iframe" allowfullscreen="true" scrolling="no" width="100%" height="400"
         src="https://www.spiele-umsonst.de/azad/downloads/html5games/skill/bubbleshooterclassic/" frameborder="0"></iframe>
       </div>
     `;
 
-    container.innerHTML = `<ul class="news-list">${items}</ul>${game_div}`;
+    container.innerHTML = `<ul class="news-list">${items}</ul><hr>${game_div}`;
   }
 
 
@@ -151,10 +145,14 @@ export default apiInitializer("1.8.0", (api) => {
     }
 
     if (container && !newsLoading) {
-      container.innerHTML = '<div class="news-empty">Loading news...</div>';
+      container.innerHTML = '<div class="news-empty">Fetching news... it may take several seconds.</div>';
     }
 
     if (newsLoading && newsFetchPromise) {
+      if (container) {
+        container.innerHTML = '<div class="news-empty">Fetching news...it may take several seconds.</div>';
+      }
+
       return newsFetchPromise.then(() => {
         if (container) {
           renderNews(container);
@@ -189,7 +187,7 @@ export default apiInitializer("1.8.0", (api) => {
   }
 
   function preloadNewsInBackground() {
-    if (newsLoaded || newsLoading || !isDiscoveryPage() || !isDesktopBrowser()) {
+    if (newsLoaded || newsLoading || !isDiscoveryPage()) {
       return;
     }
 
@@ -291,17 +289,6 @@ export default apiInitializer("1.8.0", (api) => {
 
   function injectNewsTab() {
     if (!isDiscoveryPage()) {
-      return;
-    }
-
-    if (!isDesktopBrowser()) {
-      hideNewsTab();
-
-      const existingNewsTab = document.querySelector(".nav-item-news");
-      if (existingNewsTab) {
-        existingNewsTab.remove();
-      }
-
       return;
     }
 
