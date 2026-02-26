@@ -1,4 +1,4 @@
 api_url:
-  default: "https://formatjsononline.com/api/products"
+  default: "https://w2wlljro4fx2ihbvj4bkkrmuy0poeus.lambda-url.us-east-2.on.aws/"
   type: string
   description: "News API endpoint URL returning data.news"
