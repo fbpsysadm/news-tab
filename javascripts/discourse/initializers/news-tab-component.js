@@ -295,16 +295,16 @@ export default apiInitializer("1.8.0", (api) => {
       return;
     }
 
-    if (!isDesktopBrowser()) {
-      hideNewsTab();
+    // if (!isDesktopBrowser()) {
+    //   hideNewsTab();
 
-      const existingNewsTab = document.querySelector(".nav-item-news");
-      if (existingNewsTab) {
-        existingNewsTab.remove();
-      }
+    //   const existingNewsTab = document.querySelector(".nav-item-news");
+    //   if (existingNewsTab) {
+    //     existingNewsTab.remove();
+    //   }
 
-      return;
-    }
+    //   return;
+    // }
 
     const navList = getNavList();
     if (!navList || navList.querySelector(".nav-item-news")) {
