@@ -58,7 +58,12 @@
 
 @media (max-width: 767px) {
   .news-tab {
-    padding: 0 0.75em;
+    padding: 0 0.5em;
+  }
+
+  .news-list {
+    margin: 0;
+    padding-left: 0;
   }
 
   .news-item {
