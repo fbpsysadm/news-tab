@@ -149,6 +149,10 @@ export default apiInitializer("1.8.0", (api) => {
     }
 
     if (newsLoading && newsFetchPromise) {
+      if (container) {
+        container.innerHTML = '<div class="news-empty">Loading news...</div>';
+      }
+
       return newsFetchPromise.then(() => {
         if (container) {
           renderNews(container);
