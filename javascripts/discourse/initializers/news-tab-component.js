@@ -83,7 +83,7 @@ export default apiInitializer("1.8.0", (api) => {
     }
 
     // fileter out news items from "半岛" publisher
-    const filteredNewsItems = newsItems.filter((item) => item?.publisher !== "半岛");
+    const filteredNewsItems = newsItems //.filter((item) => item?.publisher !== "半岛");
 
     if (!filteredNewsItems.length) {
       container.innerHTML = '<div class="news-empty">No news available.</div>';
