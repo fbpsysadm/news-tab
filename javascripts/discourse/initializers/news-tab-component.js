@@ -23,6 +23,7 @@ export default apiInitializer("1.8.0", (api) => {
   let newsFetchPromise = null;
   let isNewsTabActive = false;
   let newsItems = [];
+  let visibleNewsItems = [];
   let newsError = null;
 
   function isDiscoveryPage() {
@@ -83,10 +84,14 @@ export default apiInitializer("1.8.0", (api) => {
       return;
     }
 
+    visibleNewsItems = filteredNewsItems;
+
     const createTopicIcon = `<svg class="fa d-icon d-icon-d-chat svg-icon fa-width-auto svg-string" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><use href="#comment"></use></svg>`;
 
+    const copyIcon = `<svg class="fa d-icon d-icon-d-copy svg-icon fa-width-auto svg-string" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><use href="#copy"></use></svg>`;
+
     const items = filteredNewsItems
-      .map((item) => {
+      .map((item, index) => {
         // get its fields for a news item
         const title = item.title || "Untitled";
         const publisher = item.publisher || "Unknown";
@@ -98,10 +103,11 @@ export default apiInitializer("1.8.0", (api) => {
         const topicBody = `\n\n>${descriptionText}${descriptionText ? "\n\n" : ""}\n${url}`;
         const createTopicUrl = `https://www.freeblueplanet.com/new-topic?title=${encodeURIComponent(title)}&body=${encodeURIComponent(topicBody)}`;
         // target="_blank"  // this open a new windows, but slower.
-        const createTopicLink = `<span class="news-create-topic"><a href="${createTopicUrl}" rel="noopener noreferrer" title="发帖聊天">${createTopicIcon}</a></div>`;        
+        const createTopicLink = `<span class="news-create-topic"><a href="${createTopicUrl}" rel="noopener noreferrer" title="发帖聊天">${createTopicIcon}</a></span>`;
+        const copyButton = `<span class="news-copy-button" type="button" data-index="${index}" title="复制到剪贴板">${copyIcon}</span>`;
 
         // meta is the subtitle line, description is the news summary
-        const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""} &nbsp; ${createTopicLink}</div>`;
+        const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""} &nbsp; ${createTopicLink} &nbsp; ${copyButton}</div>`;
         const description = descriptionText ? `<p class="news-summary">${descriptionText}</p>` : "";
         return `<li class="news-item"><hr><div class="news-title"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
         //return `<li class="news-item"><div class="title raw-link raw-topic-link"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
@@ -117,6 +123,86 @@ export default apiInitializer("1.8.0", (api) => {
     `;
 
     container.innerHTML = `<ul class="news-list">${items}</ul><hr>${game_div}`;
+  }
+
+  function formatNewsItemText(item) {
+    const title = item?.title || "Untitled";
+    const publisher = item?.publisher || "Unknown";
+    const pub_date = item?.pub_date ? new Date(item.pub_date).toLocaleString() : "";
+    const descriptionText = item?.description || "";
+    const url = item?.url || "";
+    const meta = `${publisher}${pub_date ? ` • ${pub_date}` : ""}`;
+
+    const parts = [title, meta];
+    if (descriptionText) {
+      parts.push(descriptionText);
+    }
+    if (url) {
+      parts.push(url);
+    }
+
+    return parts.join("\n");
+  }
+
+  function copyTextToClipboard(text) {
+    if (navigator.clipboard?.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+
+    return new Promise((resolve, reject) => {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "absolute";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      if (ok) {
+        resolve();
+      } else {
+        reject(new Error("Copy failed"));
+      }
+    });
+  }
+
+  function ensureCopyHandler(container) {
+    if (!container || container.dataset.copyHandlerBound === "true") {
+      return;
+    }
+
+    container.dataset.copyHandlerBound = "true";
+    container.addEventListener("click", (event) => {
+      const button = event.target.closest(".news-copy-button");
+      if (!button) {
+        return;
+      }
+
+      event.preventDefault();
+
+      const index = Number(button.dataset.index);
+      const item = visibleNewsItems[index];
+      if (!item) {
+        return;
+      }
+
+      const text = formatNewsItemText(item);
+      copyTextToClipboard(text)
+        .then(() => {
+          button.classList.add("is-copied");
+          const original = button.textContent;
+          button.textContent = "已复制";
+          setTimeout(() => {
+            button.textContent = original;
+            button.classList.remove("is-copied");
+          }, 1500);
+        })
+        .catch(() => {
+          button.classList.add("is-copy-failed");
+          setTimeout(() => button.classList.remove("is-copy-failed"), 1500);
+        });
+    });
   }
 
 
@@ -204,6 +290,8 @@ export default apiInitializer("1.8.0", (api) => {
     if (!container) {
       return;
     }
+
+    ensureCopyHandler(container);
 
     isNewsTabActive = true;
 
