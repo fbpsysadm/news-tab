@@ -45,9 +45,13 @@
   text-decoration: none;
 }
 
-@media (max-width: 767px) {
-  .nav-item-news,
-  .news-tab {
-    display: none !important;
-  }
+.news-game {
+  margin-top: 1.5em;
+}
+
+.news-game-iframe {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border: 0;
 }
