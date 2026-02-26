@@ -102,7 +102,7 @@ export default apiInitializer("1.8.0", (api) => {
         const createTopicLink = `<span class="news-create-topic"><a href="${createTopicUrl}" rel="noopener noreferrer" title="发帖聊天">${createTopicIcon}</a></div>`;        
 
         // meta is the subtitle line, description is the news summary
-        const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""}  ${createTopicLink}</div>`;
+        const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""} &nbsp; ${createTopicLink}</div>`;
         const description = descriptionText ? `<p class="news-summary">${descriptionText}</p>` : "";
         return `<li class="news-item"><div class="news-title"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
         //return `<li class="news-item"><div class="title raw-link raw-topic-link"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
