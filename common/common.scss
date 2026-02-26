@@ -47,6 +47,37 @@
   color: #888;
 }
 
+.news-create-topic,
+.news-copy-button {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.news-copy-button {
+  margin-left: 0.4em;
+  padding: 0.15em 0.5em;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  background: #f7f7f7;
+  color: #555;
+  font-size: 0.75em;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.news-copy-button.is-copied {
+  border-color: #3a7;
+  background: #e7f7ef;
+  color: #256;
+}
+
+.news-copy-button.is-copy-failed {
+  border-color: #c55;
+  background: #fdecec;
+  color: #a22;
+}
+
 .nav-item-news.active a,
 .nav-item-news a.active {
   text-decoration: none;
