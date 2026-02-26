@@ -19,6 +19,9 @@ export default apiInitializer("1.8.0", (api) => {
   ];
 
   let newsLoaded = false;
+  let newsLoading = false;
+  let newsFetchPromise = null;
+  let isNewsTabActive = false;
   let newsItems = [];
   let newsError = null;
 
@@ -80,26 +83,46 @@ export default apiInitializer("1.8.0", (api) => {
     }
 
     // fileter out news items from "半岛" publisher
-    const filteredNewsItems = newsItems.filter((item) => item?.publisher !== "半岛");
+    const filteredNewsItems = newsItems //.filter((item) => item?.publisher !== "半岛");
 
     if (!filteredNewsItems.length) {
       container.innerHTML = '<div class="news-empty">No news available.</div>';
       return;
     }
 
+    const createTopicIcon = `<svg class="fa d-icon d-icon-d-chat svg-icon fa-width-auto svg-string" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><use href="#comment"></use></svg>`;
+
     const items = filteredNewsItems
       .map((item) => {
+        // get its fields for a news item
         const title = item.title || "Untitled";
         const publisher = item.publisher || "Unknown";
         const url = item.url || "#";
+        const descriptionText = item.description || "";
         const pub_date = item.pub_date ? new Date(item.pub_date).toLocaleString() : "";
-        const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""}</div>`;
-        const description = item.description ? `<p class="news-summary">${item.description}</p>` : "";
+
+        // for creating a topic for the news
+        const topicBody = `\n\n>${descriptionText}${descriptionText ? "\n\n" : ""}${url}`;
+        const createTopicUrl = `https://www.freeblueplanet.com/new-topic?title=${encodeURIComponent(title)}&body=${encodeURIComponent(topicBody)}`;
+        // target="_blank"  // this open a new windows, but slower.
+        const createTopicLink = `<span class="news-create-topic"><a href="${createTopicUrl}" rel="noopener noreferrer">${createTopicIcon}</a></div>`;
+
+        // meta is the subtitle line, description is the news summary
+        const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""}  ${createTopicLink}</div>`;
+        const description = descriptionText ? `<p class="news-summary">${descriptionText}</p>` : "";
         return `<li class="news-item"><div class="news-title"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
       })
       .join("");
 
-    container.innerHTML = `<ul class="news-list">${items}</ul>`;
+    // Add the game div after the news list
+    const game_div = `
+      <div>
+      <iframe allowfullscreen="true" scrolling="no" width="1400" height="400"
+        src="https://www.spiele-umsonst.de/azad/downloads/html5games/skill/bubbleshooterclassic/" frameborder="0"></iframe>
+      </div>
+    `;
+
+    container.innerHTML = `<ul class="news-list">${items}</ul>${game_div}`;
   }
 
 
@@ -121,27 +144,61 @@ export default apiInitializer("1.8.0", (api) => {
 
   function fetchNews(container) {
     if (newsLoaded) {
-      renderNews(container);
-      return;
+      if (container) {
+        renderNews(container);
+      }
+      return Promise.resolve();
     }
 
-    container.innerHTML = '<div class="news-empty">Loading news...</div>';
+    if (container && !newsLoading) {
+      container.innerHTML = '<div class="news-empty">Loading news...</div>';
+    }
+
+    if (newsLoading && newsFetchPromise) {
+      return newsFetchPromise.then(() => {
+        if (container) {
+          renderNews(container);
+        }
+      });
+    }
+
+    newsLoading = true;
     const apiUrl = settings?.api_url?.trim() || "https://formatjsononline.com/api/products";
 
-    fetch(apiUrl)    
+    newsFetchPromise = fetch(apiUrl)
       .then((response) => response.json())
       .then((data) => {
         newsItems = Array.isArray(data?.data?.news) ? data.data.news : [];
         newsError = newsItems.length ? null : "No news found in data.news.";
         newsLoaded = true;
-        renderNews(container);
       })
       .catch(() => {
         newsItems = [];
         newsError = "Failed to load news.";
         newsLoaded = true;
-        renderNews(container);
+      })
+      .finally(() => {
+        newsLoading = false;
       });
+
+    return newsFetchPromise.then(() => {
+      if (container) {
+        renderNews(container);
+      }
+    });
+  }
+
+  function preloadNewsInBackground() {
+    if (newsLoaded || newsLoading || !isDiscoveryPage() || !isDesktopBrowser()) {
+      return;
+    }
+
+    const runPreload = () => fetchNews();
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(runPreload, { timeout: 1500 });
+    } else {
+      setTimeout(runPreload, 0);
+    }
   }
 
   function showNewsTab() {
@@ -149,6 +206,8 @@ export default apiInitializer("1.8.0", (api) => {
     if (!container) {
       return;
     }
+
+    isNewsTabActive = true;
 
     container.style.display = "block";
 
@@ -170,6 +229,8 @@ export default apiInitializer("1.8.0", (api) => {
   }
 
   function hideNewsTab() {
+    isNewsTabActive = false;
+
     const container = document.querySelector(".news-tab");
     if (container) {
       container.style.display = "none";
@@ -207,6 +268,27 @@ export default apiInitializer("1.8.0", (api) => {
     }
   }
 
+  function syncNewsTabState() {
+    const navList = getNavList();
+    const newsItem = navList?.querySelector(".nav-item-news");
+    const link = newsItem?.querySelector('a[href="#news"]');
+
+    if (!navList || !newsItem || !link) {
+      return;
+    }
+
+    if (isNewsTabActive) {
+      activateNewsTab(navList, newsItem, link);
+    } else {
+      deactivateNewsTab(navList, newsItem, link);
+    }
+  }
+
+  function resetNewsMode() {
+    hideNewsTab();
+    syncNewsTabState();
+  }
+
   function injectNewsTab() {
     if (!isDiscoveryPage()) {
       return;
@@ -234,8 +316,18 @@ export default apiInitializer("1.8.0", (api) => {
     const link = document.createElement("a");
     link.href = "#news";
     link.textContent = "新闻";
+
+    const templateNavLink = navList.querySelector("a");
+    if (templateNavLink) {
+      link.className = Array.from(templateNavLink.classList)
+        .filter((className) => className !== "active")
+        .join(" ");
+    }
+
+    
     link.addEventListener("click", (event) => {
       event.preventDefault();
+      event.stopPropagation();
 
       activateNewsTab(navList, newsItem, link);
 
@@ -254,19 +346,32 @@ export default apiInitializer("1.8.0", (api) => {
       navList.appendChild(newsItem);
     }
 
-    navList.addEventListener("click", (event) => {
-      const targetLink = event.target.closest("a");
-      if (!targetLink || targetLink === link) {
-        return;
-      }
+    if (!navList.dataset.newsTabListenerBound) {
+      navList.dataset.newsTabListenerBound = "true";
+      navList.addEventListener("click", (event) => {
+        const targetLink = event.target.closest("a");
+        if (!targetLink || targetLink.getAttribute("href") === "#news") {
+          return;
+        }
 
-      hideNewsTab();
-      deactivateNewsTab(navList, newsItem, link);
-    });
+        hideNewsTab();
+
+        const currentNewsItem = navList.querySelector(".nav-item-news");
+        const currentNewsLink = currentNewsItem?.querySelector('a[href="#news"]');
+        if (currentNewsItem && currentNewsLink) {
+          deactivateNewsTab(navList, currentNewsItem, currentNewsLink);
+        }
+      });
+    }
   }
 
   api.onPageChange(() => {
-    setTimeout(injectNewsTab, 0);
+    resetNewsMode();
+    setTimeout(() => {
+      injectNewsTab();
+      syncNewsTabState();
+    }, 0);
+    preloadNewsInBackground();
   });
 
   window.addEventListener("resize", () => {
