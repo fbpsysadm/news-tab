@@ -29,13 +29,6 @@ export default apiInitializer("1.8.0", (api) => {
     return /^\/(latest|new|unread|top|categories)?(?:\?.*)?$/.test(window.location.pathname + window.location.search);
   }
 
-  function isDesktopBrowser() {
-    // const body = document.body;
-    // const isMobileClass = body?.classList.contains("mobile-view") || body?.classList.contains("mobile-device");
-    // const isSmallViewport = window.matchMedia("(max-width: 767px)").matches;
-    // return !isMobileClass && !isSmallViewport;
-    return true;
-  }
 
   function getNavList() {
     return (
@@ -117,8 +110,8 @@ export default apiInitializer("1.8.0", (api) => {
 
     // Add the game div after the news list
     const game_div = `
-      <div>
-      <iframe allowfullscreen="true" scrolling="no" width="1400" height="400"
+      <div class="news-game">
+      <iframe class="news-game-iframe" allowfullscreen="true" scrolling="no" width="100%" height="400"
         src="https://www.spiele-umsonst.de/azad/downloads/html5games/skill/bubbleshooterclassic/" frameborder="0"></iframe>
       </div>
     `;
@@ -190,7 +183,7 @@ export default apiInitializer("1.8.0", (api) => {
   }
 
   function preloadNewsInBackground() {
-    if (newsLoaded || newsLoading || !isDiscoveryPage() || !isDesktopBrowser()) {
+    if (newsLoaded || newsLoading || !isDiscoveryPage()) {
       return;
     }
 
@@ -294,17 +287,6 @@ export default apiInitializer("1.8.0", (api) => {
     if (!isDiscoveryPage()) {
       return;
     }
-
-    // if (!isDesktopBrowser()) {
-    //   hideNewsTab();
-
-    //   const existingNewsTab = document.querySelector(".nav-item-news");
-    //   if (existingNewsTab) {
-    //     existingNewsTab.remove();
-    //   }
-
-    //   return;
-    // }
 
     const navList = getNavList();
     if (!navList || navList.querySelector(".nav-item-news")) {
