@@ -76,7 +76,6 @@ export default apiInitializer("1.8.0", (api) => {
       return;
     }
 
-    // fileter out news items from "半岛" publisher
     const filteredNewsItems = newsItems //.filter((item) => item?.publisher !== "半岛");
 
     if (!filteredNewsItems.length) {
@@ -96,7 +95,7 @@ export default apiInitializer("1.8.0", (api) => {
         const pub_date = item.pub_date ? new Date(item.pub_date).toLocaleString() : "";
 
         // for creating a topic for the news
-        const topicBody = `\n\n>${descriptionText}${descriptionText ? "\n\n" : ""}${url}`;
+        const topicBody = `\n\n>${descriptionText}${descriptionText ? "\n\n" : ""}\n${url}`;
         const createTopicUrl = `https://www.freeblueplanet.com/new-topic?title=${encodeURIComponent(title)}&body=${encodeURIComponent(topicBody)}`;
         // target="_blank"  // this open a new windows, but slower.
         const createTopicLink = `<span class="news-create-topic"><a href="${createTopicUrl}" rel="noopener noreferrer" title="发帖聊天">${createTopicIcon}</a></div>`;        
@@ -104,7 +103,7 @@ export default apiInitializer("1.8.0", (api) => {
         // meta is the subtitle line, description is the news summary
         const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""} &nbsp; ${createTopicLink}</div>`;
         const description = descriptionText ? `<p class="news-summary">${descriptionText}</p>` : "";
-        return `<li class="news-item"><div class="news-title"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
+        return `<li class="news-item"><hr><div class="news-title"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
         //return `<li class="news-item"><div class="title raw-link raw-topic-link"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
       })
       .join("");
@@ -117,7 +116,7 @@ export default apiInitializer("1.8.0", (api) => {
       </div>
     `;
 
-    container.innerHTML = `<ul class="news-list">${items}</ul>${game_div}`;
+    container.innerHTML = `<ul class="news-list">${items}</ul><hr>${game_div}`;
   }
 
 
