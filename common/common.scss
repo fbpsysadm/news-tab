@@ -15,13 +15,13 @@
 .news-title {
   /*font-weight: bold;*/
   /*color: #0077cc; */
-  color: darklategray;
+  color: darkslategray;
   font-weight: 500;
 }
 .news-item a {
   /*font-weight: bold;*/
   /* color: #0077cc; */
-  color: darklategray;
+  color: darkslategray;
   font-weight: 500;
   text-decoration: none;
 }
@@ -31,11 +31,13 @@
 .news-meta {
   margin-top: 0.35em;
   color: #666;
-  font-size: 0.9em;
+  font-size: 0.8em;
 }
 .news-summary {
   margin: 0.5em 0 0 0;
-  color: #555;
+  /*color: #555;*/
+  color: gray;
+  font-size: 0.8em;  
 }
 .news-error {
   color: #c00;
