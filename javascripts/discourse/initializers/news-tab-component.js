@@ -99,7 +99,7 @@ export default apiInitializer("1.8.0", (api) => {
         const topicBody = `\n\n>${descriptionText}${descriptionText ? "\n\n" : ""}${url}`;
         const createTopicUrl = `https://www.freeblueplanet.com/new-topic?title=${encodeURIComponent(title)}&body=${encodeURIComponent(topicBody)}`;
         // target="_blank"  // this open a new windows, but slower.
-        const createTopicLink = `<span class="news-create-topic"><a href="${createTopicUrl}" rel="noopener noreferrer" title="发帖讨论">${createTopicIcon}</a></div>`;        
+        const createTopicLink = `<span class="news-create-topic"><a href="${createTopicUrl}" rel="noopener noreferrer" title="发帖聊天">${createTopicIcon}</a></div>`;        
 
         // meta is the subtitle line, description is the news summary
         const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""}  ${createTopicLink}</div>`;
