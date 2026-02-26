@@ -30,10 +30,11 @@ export default apiInitializer("1.8.0", (api) => {
   }
 
   function isDesktopBrowser() {
-    const body = document.body;
-    const isMobileClass = body?.classList.contains("mobile-view") || body?.classList.contains("mobile-device");
-    const isSmallViewport = window.matchMedia("(max-width: 767px)").matches;
-    return !isMobileClass && !isSmallViewport;
+    // const body = document.body;
+    // const isMobileClass = body?.classList.contains("mobile-view") || body?.classList.contains("mobile-device");
+    // const isSmallViewport = window.matchMedia("(max-width: 767px)").matches;
+    // return !isMobileClass && !isSmallViewport;
+    return true;
   }
 
   function getNavList() {
