@@ -6,7 +6,7 @@
 }
 .news-list {
   list-style: none;
-  padding-top: 0.5em;
+  padding-top: 0em;
   margin: 0;
 }
 .news-item {
@@ -45,6 +45,13 @@
 }
 .news-empty {
   color: #888;
+}
+
+.news-header {
+  text-align: right;
+  color: #777;
+  font-size: 0.8em;
+  margin: 0 0 0.5em 0;
 }
 
 .news-create-topic,
