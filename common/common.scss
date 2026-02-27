@@ -13,16 +13,12 @@
   margin-bottom: 1.5em;
 }
 .news-title {
-  /*font-weight: bold;*/
-  /*color: #0077cc; */
-  color: gray;
-  font-weight: 500;
+  color: #656565;
+  font-weight: 450;
 }
 .news-item a {
-  /*font-weight: bold;*/
-  /* color: #0077cc; */
-  color: gray;
-  font-weight: 500;
+  color: #656565;
+  font-weight: 450;
   text-decoration: none;
 }
 .news-item a:hover {
@@ -118,6 +114,7 @@
 
   .news-title,
   .news-item a {
+    color: #656565;    
     font-size: 1em;
     line-height: 1.35;
   }
