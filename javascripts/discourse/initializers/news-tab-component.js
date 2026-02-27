@@ -25,6 +25,7 @@ export default apiInitializer("1.8.0", (api) => {
   let newsItems = [];
   let visibleNewsItems = [];
   let newsError = null;
+  let fetchTime = null;
 
   function isDiscoveryPage() {
     return /^\/(latest|new|unread|top|categories)?(?:\?.*)?$/.test(window.location.pathname + window.location.search);
@@ -60,6 +61,40 @@ export default apiInitializer("1.8.0", (api) => {
     container.style.display = "none";
     target.prepend(container);
     return container;
+  }
+
+  function formatFetchTime(value) {
+    if (!value) {
+      return "Unknown";
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return String(value);
+    }
+
+    const diffMs = Date.now() - parsed.getTime();
+    if (diffMs <= 0) {
+      return "just now";
+    }
+
+    const seconds = Math.floor(diffMs / 1000);
+    if (seconds < 60) {
+      return `${seconds}s ago`;
+    }
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+      return `${minutes}m ago`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+      return `${hours}h ago`;
+    }
+
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
   }
 
   function renderNews(container) {
@@ -110,7 +145,6 @@ export default apiInitializer("1.8.0", (api) => {
         const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""} &nbsp; ${createTopicLink} &nbsp; ${copyButton}</div>`;
         const description = descriptionText ? `<p class="news-summary">${descriptionText}</p>` : "";
         return `<li class="news-item"><hr><div class="news-title"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
-        //return `<li class="news-item"><div class="title raw-link raw-topic-link"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
       })
       .join("");
 
@@ -122,7 +156,11 @@ export default apiInitializer("1.8.0", (api) => {
       </div>
     `;
 
-    container.innerHTML = `<ul class="news-list">${items}</ul><hr>${game_div}`;
+    const fetchTimeLabel = formatFetchTime(fetchTime);
+    const refreshLink = '<a href="#" class="news-refresh" data-action="refresh-news">refresh</a>';
+    const header = `<div class="news-header">fetched ${fetchTimeLabel} &nbsp; ${refreshLink}</div>`;
+
+    container.innerHTML = `${header}<ul class="news-list">${items}</ul><hr>${game_div}`;
   }
 
   function formatNewsItemText(item) {
@@ -205,6 +243,23 @@ export default apiInitializer("1.8.0", (api) => {
     });
   }
 
+  function ensureRefreshHandler(container) {
+    if (!container || container.dataset.refreshHandlerBound === "true") {
+      return;
+    }
+
+    container.dataset.refreshHandlerBound = "true";
+    container.addEventListener("click", (event) => {
+      const refreshLink = event.target.closest(".news-refresh");
+      if (!refreshLink) {
+        return;
+      }
+
+      event.preventDefault();
+      fetchNews(container, { force: true });
+    });
+  }
+
 
   // {
   //   "success": true,
@@ -222,7 +277,12 @@ export default apiInitializer("1.8.0", (api) => {
   // }  
 
 
-  function fetchNews(container) {
+  function fetchNews(container, { force = false } = {}) {
+    if (force) {
+      newsLoaded = false;
+      newsError = null;
+    }
+
     if (newsLoaded) {
       if (container) {
         renderNews(container);
@@ -252,6 +312,7 @@ export default apiInitializer("1.8.0", (api) => {
     newsFetchPromise = fetch(apiUrl)
       .then((response) => response.json())
       .then((data) => {
+        fetchTime = data?.fetchTime || new Date().toGMTString();
         newsItems = Array.isArray(data?.data?.news) ? data.data.news : [];
         newsError = newsItems.length ? null : "No news found in data.news.";
         newsLoaded = true;
@@ -272,7 +333,14 @@ export default apiInitializer("1.8.0", (api) => {
     });
   }
 
+  /**
+   * Preloads news data in the background if certain conditions are met:
+   * - News has not been loaded or is not currently loading.
+   * - The user is on the discovery page.
+   * Uses `requestIdleCallback` if available, otherwise falls back to `setTimeout`.
+   */
   function preloadNewsInBackground() {
+    // Don't preload if news is already loaded, currently loading, or user is not on discovery page,
     if (newsLoaded || newsLoading || !isDiscoveryPage()) {
       return;
     }
@@ -292,6 +360,7 @@ export default apiInitializer("1.8.0", (api) => {
     }
 
     ensureCopyHandler(container);
+    ensureRefreshHandler(container);
 
     isNewsTabActive = true;
 
