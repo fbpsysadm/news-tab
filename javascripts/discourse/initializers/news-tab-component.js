@@ -157,8 +157,9 @@ export default apiInitializer("1.8.0", (api) => {
     `;
 
     const fetchTimeLabel = formatFetchTime(fetchTime);
+    const itemCountLabel = `${filteredNewsItems.length}`;
     const refreshLink = '<a href="#" class="news-refresh" data-action="refresh-news">refresh</a>';
-    const header = `<div class="news-header">fetched ${fetchTimeLabel} &nbsp; ${refreshLink}</div>`;
+    const header = `<div class="news-header">${itemCountLabel} fetched ${fetchTimeLabel} &nbsp; ${refreshLink}</div>`;    
 
     container.innerHTML = `${header}<ul class="news-list">${items}</ul><hr>${game_div}`;
   }
