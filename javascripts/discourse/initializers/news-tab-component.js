@@ -181,7 +181,7 @@ export default apiInitializer("1.8.0", (api) => {
     // }
     // return parts.join("\n");
 
-    ret = ">" + title + "\n>" +descriptionText + "\n\n" + url
+    const ret = ">" + title + "\n>" + descriptionText + "\n\n" + url
     return ret
   }
 
