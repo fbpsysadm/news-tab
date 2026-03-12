@@ -166,21 +166,23 @@ export default apiInitializer("1.8.0", (api) => {
 
   function formatNewsItemText(item) {
     const title = item?.title || "Untitled";
-    const publisher = item?.publisher || "Unknown";
-    const pub_date = item?.pub_date ? new Date(item.pub_date).toLocaleString() : "";
+    // const publisher = item?.publisher || "Unknown";
+    // const pub_date = item?.pub_date ? new Date(item.pub_date).toLocaleString() : "";
     const descriptionText = item?.description || "";
     const url = item?.url || "";
-    const meta = `${publisher}${pub_date ? ` • ${pub_date}` : ""}`;
+    // const meta = `${publisher}${pub_date ? ` • ${pub_date}` : ""}`;
 
-    const parts = [title, meta];
-    if (descriptionText) {
-      parts.push(descriptionText);
-    }
-    if (url) {
-      parts.push(url);
-    }
+    // const parts = [title, meta];
+    // if (descriptionText) {
+    //   parts.push(descriptionText);
+    // }
+    // if (url) {
+    //   parts.push(url);
+    // }
+    // return parts.join("\n");
 
-    return parts.join("\n");
+    ret = ">" + title + "\n>" +descriptionText + "\n\n" + url
+    return ret
   }
 
   function copyTextToClipboard(text) {
