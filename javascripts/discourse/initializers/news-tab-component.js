@@ -161,13 +161,23 @@ export default apiInitializer("1.8.0", (api) => {
       <tv-market-summary direction="horizontal"></tv-market-summary>
     `;
 
+    const stock_iframe = `
+      <iframe 
+        src="https://tradingview.com"
+        width="100%" 
+        height="500" 
+        frameborder="0" 
+        allowtransparency="true" 
+        style="border: none;">
+      </iframe> `;
+
     
     const fetchTimeLabel = formatFetchTime(fetchTime);
     const itemCountLabel = `${filteredNewsItems.length}`;
     const refreshLink = '<a href="#" class="news-refresh" data-action="refresh-news">refresh</a>';
     const header = `<div class="news-header">${itemCountLabel} fetched ${fetchTimeLabel} &nbsp; ${refreshLink}</div>`;    
 
-    container.innerHTML = `${stock_div} ${header}<ul class="news-list">${items}</ul><hr>${game_div}`;
+    container.innerHTML = `${stock_iframe} ${header}<ul class="news-list">${items}</ul><hr>${game_div}`;
   }
 
   function formatNewsItemText(item) {
