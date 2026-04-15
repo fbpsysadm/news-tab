@@ -156,12 +156,18 @@ export default apiInitializer("1.8.0", (api) => {
       </div>
     `;
 
+    const stock_div = `
+      <script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-market-summary.js"></script>
+      <tv-market-summary direction="horizontal"></tv-market-summary>
+    `;
+
+    
     const fetchTimeLabel = formatFetchTime(fetchTime);
     const itemCountLabel = `${filteredNewsItems.length}`;
     const refreshLink = '<a href="#" class="news-refresh" data-action="refresh-news">refresh</a>';
     const header = `<div class="news-header">${itemCountLabel} fetched ${fetchTimeLabel} &nbsp; ${refreshLink}</div>`;    
 
-    container.innerHTML = `${header}<ul class="news-list">${items}</ul><hr>${game_div}`;
+    container.innerHTML = `${stock_div} ${header}<ul class="news-list">${items}</ul><hr>${game_div}`;
   }
 
   function formatNewsItemText(item) {
