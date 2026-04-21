@@ -169,7 +169,7 @@ export default apiInitializer("1.8.0", (api) => {
       return;
     }
 
-    container.style.cursor = "default";
+    // container.style.cursor = "default";
 
     container.innerHTML = `
       <div class="games-panel">
@@ -420,7 +420,7 @@ export default apiInitializer("1.8.0", (api) => {
     }
 
     container.style.display = "block";
-    container.style.cursor = "default";
+    // container.style.cursor = "default";
 
     discoverySelectorsToHide.forEach((selector) => {
       document.querySelectorAll(selector).forEach((element) => {
