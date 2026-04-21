@@ -21,7 +21,7 @@ export default apiInitializer("1.8.0", (api) => {
   let newsLoaded = false;
   let newsLoading = false;
   let newsFetchPromise = null;
-  let isNewsTabActive = false;
+  let activeCustomTab = null;
   let newsItems = [];
   let visibleNewsItems = [];
   let newsError = null;
@@ -40,8 +40,8 @@ export default apiInitializer("1.8.0", (api) => {
     );
   }
 
-  function getNewsContainer() {
-    let container = document.querySelector(".news-tab");
+  function getTabContainer(tabClassName) {
+    let container = document.querySelector(`.${tabClassName}`);
     if (container) {
       return container;
     }
@@ -57,10 +57,18 @@ export default apiInitializer("1.8.0", (api) => {
     }
 
     container = document.createElement("section");
-    container.className = "news-tab";
+    container.className = tabClassName;
     container.style.display = "none";
     target.prepend(container);
     return container;
+  }
+
+  function getNewsContainer() {
+    return getTabContainer("news-tab");
+  }
+
+  function getGamesContainer() {
+    return getTabContainer("games-tab");
   }
 
   function formatFetchTime(value) {
@@ -148,20 +156,25 @@ export default apiInitializer("1.8.0", (api) => {
       })
       .join("");
 
-    // Add the game div after the news list
-    const game_div = `
-      <div class="news-game">
-      <iframe class="news-game-iframe" allowfullscreen="true" scrolling="no" width="100%" height="400"
-        src="https://www.spiele-umsonst.de/azad/downloads/html5games/skill/bubbleshooterclassic/" frameborder="0"></iframe>
-      </div>
-    `;
-
     const fetchTimeLabel = formatFetchTime(fetchTime);
     const itemCountLabel = `${filteredNewsItems.length}`;
     const refreshLink = '<a href="#" class="news-refresh" data-action="refresh-news">refresh</a>';
     const header = `<div class="news-header">${itemCountLabel} fetched ${fetchTimeLabel} &nbsp; ${refreshLink}</div>`;    
 
-    container.innerHTML = `${header}<ul class="news-list">${items}</ul><hr>${game_div}`;
+    container.innerHTML = `${header}<ul class="news-list">${items}</ul>`;
+  }
+
+  function renderGames(container) {
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="games-panel">
+        <iframe class="games-iframe" allowfullscreen="true" scrolling="no" width="100%" height="400"
+          src="https://www.spiele-umsonst.de/azad/downloads/html5games/skill/bubbleshooterclassic/" frameborder="0"></iframe>
+      </div>
+    `;
   }
 
   function formatNewsItemText(item) {
@@ -365,7 +378,12 @@ export default apiInitializer("1.8.0", (api) => {
     ensureCopyHandler(container);
     ensureRefreshHandler(container);
 
-    isNewsTabActive = true;
+    activeCustomTab = "news";
+
+    const gamesContainer = document.querySelector(".games-tab");
+    if (gamesContainer) {
+      gamesContainer.style.display = "none";
+    }
 
     container.style.display = "block";
 
@@ -386,13 +404,50 @@ export default apiInitializer("1.8.0", (api) => {
     fetchNews(container);
   }
 
-  function hideNewsTab() {
-    isNewsTabActive = false;
+  function showGamesTab() {
+    const container = getGamesContainer();
+    if (!container) {
+      return;
+    }
 
+    activeCustomTab = "games";
+
+    const newsContainer = document.querySelector(".news-tab");
+    if (newsContainer) {
+      newsContainer.style.display = "none";
+    }
+
+    container.style.display = "block";
+
+    discoverySelectorsToHide.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((element) => {
+        if (!element || element.closest(".games-tab") || element.contains(container)) {
+          return;
+        }
+
+        if (!hiddenDiscoveryElements.has(element)) {
+          hiddenDiscoveryElements.set(element, element.style.display || "");
+        }
+
+        element.style.display = "none";
+      });
+    });
+
+    renderGames(container);
+  }
+
+  function hideNewsTab() {
     const container = document.querySelector(".news-tab");
     if (container) {
       container.style.display = "none";
     }
+
+    const gamesContainer = document.querySelector(".games-tab");
+    if (gamesContainer) {
+      gamesContainer.style.display = "none";
+    }
+
+    activeCustomTab = null;
 
     hiddenDiscoveryElements.forEach((previousDisplay, element) => {
       if (!element.isConnected) {
@@ -405,15 +460,15 @@ export default apiInitializer("1.8.0", (api) => {
     hiddenDiscoveryElements.clear();
   }
 
-  function activateNewsTab(navList, newsItem, link) {
+  function activateTab(navList, tabItem, link) {
     navList.querySelectorAll("li").forEach((li) => li.classList.remove("active"));
     navList.querySelectorAll("a").forEach((a) => a.classList.remove("active"));
-    newsItem.classList.add("active");
+    tabItem.classList.add("active");
     link.classList.add("active");
   }
 
-  function deactivateNewsTab(navList, newsItem, link) {
-    newsItem.classList.remove("active");
+  function deactivateTab(navList, tabItem, link) {
+    tabItem.classList.remove("active");
     link.classList.remove("active");
 
     const hasOtherActive = navList.querySelector("li.active, a.active");
@@ -430,15 +485,35 @@ export default apiInitializer("1.8.0", (api) => {
     const navList = getNavList();
     const newsItem = navList?.querySelector(".nav-item-news");
     const link = newsItem?.querySelector('a[href="#news"]');
+    const gamesItem = navList?.querySelector(".nav-item-games");
+    const gamesLink = gamesItem?.querySelector('a[href="#games"]');
 
-    if (!navList || !newsItem || !link) {
+    if (!navList) {
       return;
     }
 
-    if (isNewsTabActive) {
-      activateNewsTab(navList, newsItem, link);
-    } else {
-      deactivateNewsTab(navList, newsItem, link);
+    if (activeCustomTab === "news" && newsItem && link) {
+      activateTab(navList, newsItem, link);
+      if (gamesItem && gamesLink) {
+        deactivateTab(navList, gamesItem, gamesLink);
+      }
+      return;
+    }
+
+    if (activeCustomTab === "games" && gamesItem && gamesLink) {
+      activateTab(navList, gamesItem, gamesLink);
+      if (newsItem && link) {
+        deactivateTab(navList, newsItem, link);
+      }
+      return;
+    }
+
+    if (newsItem && link) {
+      deactivateTab(navList, newsItem, link);
+    }
+
+    if (gamesItem && gamesLink) {
+      deactivateTab(navList, gamesItem, gamesLink);
     }
   }
 
@@ -453,51 +528,82 @@ export default apiInitializer("1.8.0", (api) => {
     }
 
     const navList = getNavList();
-    if (!navList || navList.querySelector(".nav-item-news")) {
+    if (!navList) {
       return;
     }
 
-    const newsItem = document.createElement("li");
-    newsItem.className = "nav-item-news";
-
-    const link = document.createElement("a");
-    link.href = "#news";
-    link.textContent = "新闻";
-
     const templateNavLink = navList.querySelector("a");
-    if (templateNavLink) {
-      link.className = Array.from(templateNavLink.classList)
-        .filter((className) => className !== "active")
-        .join(" ");
+    if (!navList.querySelector(".nav-item-news")) {
+      const newsItem = document.createElement("li");
+      newsItem.className = "nav-item-news";
+
+      const link = document.createElement("a");
+      link.href = "#news";
+      link.textContent = "新闻";
+
+      if (templateNavLink) {
+        link.className = Array.from(templateNavLink.classList)
+          .filter((className) => className !== "active")
+          .join(" ");
+      }
+
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        activateTab(navList, newsItem, link);
+        showNewsTab();
+      });
+
+      newsItem.appendChild(link);
+
+      const categoriesTab = Array.from(navList.querySelectorAll("li")).find((li) =>
+        li.querySelector('a[href*="/categories"]')
+      );
+
+      if (categoriesTab?.parentNode) {
+        categoriesTab.parentNode.insertBefore(newsItem, categoriesTab.nextSibling);
+      } else {
+        navList.appendChild(newsItem);
+      }
     }
 
-    
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
+    if (!navList.querySelector(".nav-item-games")) {
+      const gamesItem = document.createElement("li");
+      gamesItem.className = "nav-item-games";
 
-      activateNewsTab(navList, newsItem, link);
+      const gamesLink = document.createElement("a");
+      gamesLink.href = "#games";
+      gamesLink.textContent = "游戏";
 
-      showNewsTab();
-    });
+      if (templateNavLink) {
+        gamesLink.className = Array.from(templateNavLink.classList)
+          .filter((className) => className !== "active")
+          .join(" ");
+      }
 
-    newsItem.appendChild(link);
+      gamesLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        activateTab(navList, gamesItem, gamesLink);
+        showGamesTab();
+      });
 
-    const categoriesTab = Array.from(navList.querySelectorAll("li")).find((li) =>
-      li.querySelector('a[href*="/categories"]')
-    );
+      gamesItem.appendChild(gamesLink);
 
-    if (categoriesTab?.parentNode) {
-      categoriesTab.parentNode.insertBefore(newsItem, categoriesTab.nextSibling);
-    } else {
-      navList.appendChild(newsItem);
+      const newsTab = navList.querySelector(".nav-item-news");
+      if (newsTab?.parentNode) {
+        newsTab.parentNode.insertBefore(gamesItem, newsTab.nextSibling);
+      } else {
+        navList.appendChild(gamesItem);
+      }
     }
 
     if (!navList.dataset.newsTabListenerBound) {
       navList.dataset.newsTabListenerBound = "true";
       navList.addEventListener("click", (event) => {
         const targetLink = event.target.closest("a");
-        if (!targetLink || targetLink.getAttribute("href") === "#news") {
+        const href = targetLink?.getAttribute("href");
+        if (!targetLink || href === "#news" || href === "#games") {
           return;
         }
 
@@ -506,7 +612,13 @@ export default apiInitializer("1.8.0", (api) => {
         const currentNewsItem = navList.querySelector(".nav-item-news");
         const currentNewsLink = currentNewsItem?.querySelector('a[href="#news"]');
         if (currentNewsItem && currentNewsLink) {
-          deactivateNewsTab(navList, currentNewsItem, currentNewsLink);
+          deactivateTab(navList, currentNewsItem, currentNewsLink);
+        }
+
+        const currentGamesItem = navList.querySelector(".nav-item-games");
+        const currentGamesLink = currentGamesItem?.querySelector('a[href="#games"]');
+        if (currentGamesItem && currentGamesLink) {
+          deactivateTab(navList, currentGamesItem, currentGamesLink);
         }
       });
     }
