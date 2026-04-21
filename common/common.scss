@@ -4,6 +4,9 @@
 .news-tab {
   padding: 0em;
 }
+.games-tab {
+  padding: 0em;
+}
 .news-list {
   list-style: none;
   padding-top: 0em;
@@ -83,15 +86,17 @@
 }
 
 .nav-item-news.active a,
-.nav-item-news a.active {
+.nav-item-news a.active,
+.nav-item-games.active a,
+.nav-item-games a.active {
   text-decoration: none;
 }
 
-.news-game {
+.games-panel {
   margin-top: 1.5em;
 }
 
-.news-game-iframe {
+.games-iframe {
   display: block;
   width: 100%;
   max-width: 100%;
@@ -130,11 +135,11 @@
     line-height: 1.45;
   }
 
-  .news-game {
+  .games-panel {
     margin-top: 5em;
   }
 
-  .news-game-iframe {
+  .games-iframe {
     height: 240px;
   }
 }
