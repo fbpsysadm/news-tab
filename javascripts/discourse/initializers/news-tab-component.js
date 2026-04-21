@@ -71,6 +71,28 @@ export default apiInitializer("1.8.0", (api) => {
     return getTabContainer("games-tab");
   }
 
+  function setGamesCursorOverride(enabled) {
+    const targets = [
+      document.body,
+      document.documentElement,
+      document.querySelector("#main-outlet"),
+      document.querySelector(".list-container"),
+      document.querySelector(".discovery-list-container"),
+    ];
+
+    targets.forEach((element) => {
+      if (!element) {
+        return;
+      }
+
+      if (enabled) {
+        element.style.setProperty("cursor", "default", "important");
+      } else {
+        element.style.removeProperty("cursor");
+      }
+    });
+  }
+
   function formatFetchTime(value) {
     if (!value) {
       return "Unknown";
@@ -377,6 +399,8 @@ export default apiInitializer("1.8.0", (api) => {
       return;
     }
 
+    setGamesCursorOverride(false);
+
     ensureCopyHandler(container);
     ensureRefreshHandler(container);
 
@@ -421,6 +445,7 @@ export default apiInitializer("1.8.0", (api) => {
 
     container.style.display = "block";
     container.style.cursor = "default";
+    setGamesCursorOverride(true);
 
     discoverySelectorsToHide.forEach((selector) => {
       document.querySelectorAll(selector).forEach((element) => {
@@ -440,6 +465,8 @@ export default apiInitializer("1.8.0", (api) => {
   }
 
   function hideNewsTab() {
+    setGamesCursorOverride(false);
+
     const container = document.querySelector(".news-tab");
     if (container) {
       container.style.display = "none";
