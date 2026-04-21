@@ -94,6 +94,7 @@
 
 .games-panel {
   margin-top: 1.5em;
+  cursor: default;
 }
 
 .games-iframe {
@@ -101,6 +102,7 @@
   width: 100%;
   max-width: 100%;
   border: 0;
+  cursor: default;
 }
 
 @media (max-width: 767px) {
