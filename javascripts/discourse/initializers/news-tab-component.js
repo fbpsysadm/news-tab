@@ -478,6 +478,11 @@ export default apiInitializer("1.8.0", (api) => {
 
     const gamesContainer = document.querySelector(".games-tab");
     if (gamesContainer) {
+      const iframe = gamesContainer.querySelector(".games-iframe");
+      if (iframe) {
+        iframe.remove();
+      }
+      gamesContainer.innerHTML = "";
       gamesContainer.style.display = "none";
     }
 
