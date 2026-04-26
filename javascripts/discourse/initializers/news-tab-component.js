@@ -72,6 +72,10 @@ export default apiInitializer("1.8.0", (api) => {
   }
 
   function setGamesCursorOverride(enabled) {
+    const className = "games-tab-active";
+    document.documentElement.classList.toggle(className, enabled);
+    document.body?.classList.toggle(className, enabled);
+
     const targets = [
       document.body,
       document.documentElement,
