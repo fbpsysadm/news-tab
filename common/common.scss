@@ -105,6 +105,19 @@
   cursor: default;
 }
 
+html.games-tab-active #main-outlet,
+html.games-tab-active #main-outlet * {
+  cursor: auto !important;
+}
+
+html.games-tab-active #main-outlet a,
+html.games-tab-active #main-outlet button,
+html.games-tab-active #main-outlet [role="button"],
+html.games-tab-active #main-outlet .btn,
+html.games-tab-active #main-outlet .news-copy-button {
+  cursor: pointer !important;
+}
+
 @media (max-width: 767px) {
   .news-tab {
     padding: 0 0em;
