@@ -4,6 +4,9 @@
 .news-tab {
   padding: 0em;
 }
+.games-tab {
+  padding: 0em;
+}
 .news-list {
   list-style: none;
   padding-top: 0em;
@@ -83,19 +86,42 @@
 }
 
 .nav-item-news.active a,
-.nav-item-news a.active {
+.nav-item-news a.active,
+.nav-item-games.active a,
+.nav-item-games a.active {
   text-decoration: none;
 }
 
-.news-game {
+.games-panel {
   margin-top: 1.5em;
+  cursor: default;
 }
 
-.news-game-iframe {
+.games-iframe {
   display: block;
   width: 100%;
   max-width: 100%;
   border: 0;
+  cursor: default;
+}
+
+html.games-tab-active #main-outlet,
+html.games-tab-active #main-outlet * {
+  cursor: auto !important;
+}
+
+html.games-tab-active #main-outlet a,
+html.games-tab-active #main-outlet button,
+html.games-tab-active #main-outlet [role="button"],
+html.games-tab-active #main-outlet .btn,
+html.games-tab-active #main-outlet .news-copy-button {
+  cursor: pointer !important;
+}
+
+html.games-tab-active .loading-container,
+html.games-tab-active .loading-container .spinner,
+html.games-tab-active .loading-container .spinner.small {
+  display: none !important;
 }
 
 @media (max-width: 767px) {
@@ -130,11 +156,11 @@
     line-height: 1.45;
   }
 
-  .news-game {
+  .games-panel {
     margin-top: 5em;
   }
 
-  .news-game-iframe {
+  .games-iframe {
     height: 240px;
   }
 }
