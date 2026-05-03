@@ -4,6 +4,9 @@
 .news-tab {
   padding: 0em;
 }
+.youtan-tab {
+  padding: 0em;
+}
 .games-tab {
   padding: 0em;
 }
@@ -87,6 +90,8 @@
 
 .nav-item-news.active a,
 .nav-item-news a.active,
+.nav-item-youtan.active a,
+.nav-item-youtan a.active,
 .nav-item-games.active a,
 .nav-item-games a.active {
   text-decoration: none;
@@ -126,6 +131,10 @@ html.games-tab-active .loading-container .spinner.small {
 
 @media (max-width: 767px) {
   .news-tab {
+    padding: 0 0em;
+  }
+
+  .youtan-tab {
     padding: 0 0em;
   }
 
