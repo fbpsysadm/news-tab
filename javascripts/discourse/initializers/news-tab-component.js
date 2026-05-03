@@ -18,14 +18,37 @@ export default apiInitializer("1.8.0", (api) => {
     ".latest-topic-list",
   ];
 
-  let newsLoaded = false;
-  let newsLoading = false;
-  let newsFetchPromise = null;
   let activeCustomTab = null;
-  let newsItems = [];
-  let visibleNewsItems = [];
-  let newsError = null;
-  let fetchTime = null;
+  const feedStates = {
+    news: createFeedState(),
+    youtan: createFeedState(),
+  };
+
+  function createFeedState() {
+    return {
+      loaded: false,
+      loading: false,
+      fetchPromise: null,
+      items: [],
+      visibleItems: [],
+      error: null,
+      fetchTime: null,
+    };
+  }
+
+  function getFeedState(tabKey) {
+    return feedStates[tabKey] || feedStates.news;
+  }
+
+  function getFeedApiUrl(tabKey) {
+    const baseUrl = settings?.api_url?.trim() || "https://formatjsononline.com/api/products";
+
+    if (tabKey !== "youtan") {
+      return baseUrl;
+    }
+
+    return `${baseUrl.replace(/\/$/, "")}/youtan`;
+  }
 
   function isDiscoveryPage() {
     return /^\/(latest|new|unread|top|categories)?(?:\?.*)?$/.test(window.location.pathname + window.location.search);
@@ -135,29 +158,31 @@ export default apiInitializer("1.8.0", (api) => {
     return `${days}d ago`;
   }
 
-  function renderNews(container) {
+  function renderNews(container, tabKey = "news") {
     if (!container) {
       return;
     }
 
-    if (newsError) {
-      container.innerHTML = `<div class="news-error">${newsError}</div>`;
+    const feedState = getFeedState(tabKey);
+
+    if (feedState.error) {
+      container.innerHTML = `<div class="news-error">${feedState.error}</div>`;
       return;
     }
 
-    if (!newsItems.length) {
+    if (!feedState.items.length) {
       container.innerHTML = '<div class="news-empty">No news available.</div>';
       return;
     }
 
-    const filteredNewsItems = newsItems //.filter((item) => item?.publisher !== "半岛");
+    const filteredNewsItems = feedState.items //.filter((item) => item?.publisher !== "半岛");
 
     if (!filteredNewsItems.length) {
       container.innerHTML = '<div class="news-empty">No news available.</div>';
       return;
     }
 
-    visibleNewsItems = filteredNewsItems;
+    feedState.visibleItems = filteredNewsItems;
 
     const createTopicIcon = `<svg class="fa d-icon d-icon-d-chat svg-icon fa-width-auto svg-string" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><use href="#comment"></use></svg>`;
 
@@ -186,7 +211,7 @@ export default apiInitializer("1.8.0", (api) => {
       })
       .join("");
 
-    const fetchTimeLabel = formatFetchTime(fetchTime);
+    const fetchTimeLabel = formatFetchTime(feedState.fetchTime);
     const itemCountLabel = `${filteredNewsItems.length}`;
     const refreshLink = '<a href="#" class="news-refresh" data-action="refresh-news">refresh</a>';
     const header = `<div class="news-header">${itemCountLabel} fetched ${fetchTimeLabel} &nbsp; ${refreshLink}</div>`;    
@@ -253,7 +278,7 @@ export default apiInitializer("1.8.0", (api) => {
     });
   }
 
-  function ensureCopyHandler(container) {
+  function ensureCopyHandler(container, tabKey) {
     if (!container || container.dataset.copyHandlerBound === "true") {
       return;
     }
@@ -268,7 +293,7 @@ export default apiInitializer("1.8.0", (api) => {
       event.preventDefault();
 
       const index = Number(button.dataset.index);
-      const item = visibleNewsItems[index];
+      const item = getFeedState(tabKey).visibleItems[index];
       if (!item) {
         return;
       }
@@ -291,7 +316,7 @@ export default apiInitializer("1.8.0", (api) => {
     });
   }
 
-  function ensureRefreshHandler(container) {
+  function ensureRefreshHandler(container, tabKey) {
     if (!container || container.dataset.refreshHandlerBound === "true") {
       return;
     }
@@ -304,7 +329,7 @@ export default apiInitializer("1.8.0", (api) => {
       }
 
       event.preventDefault();
-      fetchNews(container, { force: true });
+      fetchNews(tabKey, container, { force: true });
     });
   }
 
@@ -325,58 +350,60 @@ export default apiInitializer("1.8.0", (api) => {
   // }  
 
 
-  function fetchNews(container, { force = false } = {}) {
+  function fetchNews(tabKey = "news", container, { force = false } = {}) {
+    const feedState = getFeedState(tabKey);
+
     if (force) {
-      newsLoaded = false;
-      newsError = null;
+      feedState.loaded = false;
+      feedState.error = null;
     }
 
-    if (newsLoaded) {
+    if (feedState.loaded) {
       if (container) {
-        renderNews(container);
+        renderNews(container, tabKey);
       }
       return Promise.resolve();
     }
 
-    if (container && !newsLoading) {
+    if (container && !feedState.loading) {
       container.innerHTML = '<div class="news-empty">Fetching latest news from several sources... it may take several seconds.</div>';
     }
 
-    if (newsLoading && newsFetchPromise) {
+    if (feedState.loading && feedState.fetchPromise) {
       if (container) {
         container.innerHTML = '<div class="news-empty">Fetching latest news from several sources... it may take several seconds.</div>';
       }
 
-      return newsFetchPromise.then(() => {
+      return feedState.fetchPromise.then(() => {
         if (container) {
-          renderNews(container);
+          renderNews(container, tabKey);
         }
       });
     }
 
-    newsLoading = true;
-    const apiUrl = settings?.api_url?.trim() || "https://formatjsononline.com/api/products";
+    feedState.loading = true;
+    const apiUrl = getFeedApiUrl(tabKey);
 
-    newsFetchPromise = fetch(apiUrl)
+    feedState.fetchPromise = fetch(apiUrl)
       .then((response) => response.json())
       .then((data) => {
-        fetchTime = data?.fetchTime || new Date().toGMTString();
-        newsItems = Array.isArray(data?.data?.news) ? data.data.news : [];
-        newsError = newsItems.length ? null : "No news found in data.news.";
-        newsLoaded = true;
+        feedState.fetchTime = data?.fetchTime || new Date().toGMTString();
+        feedState.items = Array.isArray(data?.data?.news) ? data.data.news : [];
+        feedState.error = feedState.items.length ? null : "No news found in data.news.";
+        feedState.loaded = true;
       })
       .catch(() => {
-        newsItems = [];
-        newsError = "Failed to load news.";
-        newsLoaded = true;
+        feedState.items = [];
+        feedState.error = "Failed to load news.";
+        feedState.loaded = true;
       })
       .finally(() => {
-        newsLoading = false;
+        feedState.loading = false;
       });
 
-    return newsFetchPromise.then(() => {
+    return feedState.fetchPromise.then(() => {
       if (container) {
-        renderNews(container);
+        renderNews(container, tabKey);
       }
     });
   }
@@ -388,12 +415,19 @@ export default apiInitializer("1.8.0", (api) => {
    * Uses `requestIdleCallback` if available, otherwise falls back to `setTimeout`.
    */
   function preloadNewsInBackground() {
-    // Don't preload if news is already loaded, currently loading, or user is not on discovery page,
-    if (newsLoaded || newsLoading || !isDiscoveryPage()) {
+    if (!isDiscoveryPage()) {
       return;
     }
 
-    const runPreload = () => fetchNews();
+    const runPreload = () => {
+      ["news", "youtan"].forEach((tabKey) => {
+        const feedState = getFeedState(tabKey);
+        if (!feedState.loaded && !feedState.loading) {
+          fetchNews(tabKey);
+        }
+      });
+    };
+
     if ("requestIdleCallback" in window) {
       window.requestIdleCallback(runPreload, { timeout: 1500 });
     } else {
@@ -409,8 +443,8 @@ export default apiInitializer("1.8.0", (api) => {
 
     setGamesCursorOverride(false);
 
-    ensureCopyHandler(container);
-    ensureRefreshHandler(container);
+    ensureCopyHandler(container, "news");
+    ensureRefreshHandler(container, "news");
 
     activeCustomTab = "news";
 
@@ -440,7 +474,7 @@ export default apiInitializer("1.8.0", (api) => {
       });
     });
 
-    fetchNews(container);
+    fetchNews("news", container);
   }
 
   function showYoutanTab() {
@@ -451,8 +485,8 @@ export default apiInitializer("1.8.0", (api) => {
 
     setGamesCursorOverride(false);
 
-    ensureCopyHandler(container);
-    ensureRefreshHandler(container);
+    ensureCopyHandler(container, "youtan");
+    ensureRefreshHandler(container, "youtan");
 
     activeCustomTab = "youtan";
 
@@ -482,7 +516,7 @@ export default apiInitializer("1.8.0", (api) => {
       });
     });
 
-    fetchNews(container);
+    fetchNews("youtan", container);
   }
 
   function showGamesTab() {
@@ -696,7 +730,7 @@ export default apiInitializer("1.8.0", (api) => {
 
       const youtanLink = document.createElement("a");
       youtanLink.href = "#youtan";
-      youtanLink.textContent = "youtan";
+      youtanLink.textContent = "友坛";
 
       if (templateNavLink) {
         youtanLink.className = Array.from(templateNavLink.classList)
