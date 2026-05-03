@@ -67,6 +67,10 @@ export default apiInitializer("1.8.0", (api) => {
     return getTabContainer("news-tab");
   }
 
+  function getYoutanContainer() {
+    return getTabContainer("youtan-tab");
+  }
+
   function getGamesContainer() {
     return getTabContainer("games-tab");
   }
@@ -410,6 +414,11 @@ export default apiInitializer("1.8.0", (api) => {
 
     activeCustomTab = "news";
 
+    const youtanContainer = document.querySelector(".youtan-tab");
+    if (youtanContainer) {
+      youtanContainer.style.display = "none";
+    }
+
     const gamesContainer = document.querySelector(".games-tab");
     if (gamesContainer) {
       gamesContainer.style.display = "none";
@@ -420,6 +429,48 @@ export default apiInitializer("1.8.0", (api) => {
     discoverySelectorsToHide.forEach((selector) => {
       document.querySelectorAll(selector).forEach((element) => {
         if (!element || element.closest(".news-tab") || element.contains(container)) {
+          return;
+        }
+
+        if (!hiddenDiscoveryElements.has(element)) {
+          hiddenDiscoveryElements.set(element, element.style.display || "");
+        }
+
+        element.style.display = "none";
+      });
+    });
+
+    fetchNews(container);
+  }
+
+  function showYoutanTab() {
+    const container = getYoutanContainer();
+    if (!container) {
+      return;
+    }
+
+    setGamesCursorOverride(false);
+
+    ensureCopyHandler(container);
+    ensureRefreshHandler(container);
+
+    activeCustomTab = "youtan";
+
+    const newsContainer = document.querySelector(".news-tab");
+    if (newsContainer) {
+      newsContainer.style.display = "none";
+    }
+
+    const gamesContainer = document.querySelector(".games-tab");
+    if (gamesContainer) {
+      gamesContainer.style.display = "none";
+    }
+
+    container.style.display = "block";
+
+    discoverySelectorsToHide.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((element) => {
+        if (!element || element.closest(".youtan-tab") || element.contains(container)) {
           return;
         }
 
@@ -445,6 +496,11 @@ export default apiInitializer("1.8.0", (api) => {
     const newsContainer = document.querySelector(".news-tab");
     if (newsContainer) {
       newsContainer.style.display = "none";
+    }
+
+    const youtanContainer = document.querySelector(".youtan-tab");
+    if (youtanContainer) {
+      youtanContainer.style.display = "none";
     }
 
     container.style.display = "block";
@@ -474,6 +530,11 @@ export default apiInitializer("1.8.0", (api) => {
     const container = document.querySelector(".news-tab");
     if (container) {
       container.style.display = "none";
+    }
+
+    const youtanContainer = document.querySelector(".youtan-tab");
+    if (youtanContainer) {
+      youtanContainer.style.display = "none";
     }
 
     const gamesContainer = document.querySelector(".games-tab");
@@ -524,6 +585,8 @@ export default apiInitializer("1.8.0", (api) => {
     const navList = getNavList();
     const newsItem = navList?.querySelector(".nav-item-news");
     const link = newsItem?.querySelector('a[href="#news"]');
+    const youtanItem = navList?.querySelector(".nav-item-youtan");
+    const youtanLink = youtanItem?.querySelector('a[href="#youtan"]');
     const gamesItem = navList?.querySelector(".nav-item-games");
     const gamesLink = gamesItem?.querySelector('a[href="#games"]');
 
@@ -533,6 +596,20 @@ export default apiInitializer("1.8.0", (api) => {
 
     if (activeCustomTab === "news" && newsItem && link) {
       activateTab(navList, newsItem, link);
+      if (youtanItem && youtanLink) {
+        deactivateTab(navList, youtanItem, youtanLink);
+      }
+      if (gamesItem && gamesLink) {
+        deactivateTab(navList, gamesItem, gamesLink);
+      }
+      return;
+    }
+
+    if (activeCustomTab === "youtan" && youtanItem && youtanLink) {
+      activateTab(navList, youtanItem, youtanLink);
+      if (newsItem && link) {
+        deactivateTab(navList, newsItem, link);
+      }
       if (gamesItem && gamesLink) {
         deactivateTab(navList, gamesItem, gamesLink);
       }
@@ -544,11 +621,18 @@ export default apiInitializer("1.8.0", (api) => {
       if (newsItem && link) {
         deactivateTab(navList, newsItem, link);
       }
+      if (youtanItem && youtanLink) {
+        deactivateTab(navList, youtanItem, youtanLink);
+      }
       return;
     }
 
     if (newsItem && link) {
       deactivateTab(navList, newsItem, link);
+    }
+
+    if (youtanItem && youtanLink) {
+      deactivateTab(navList, youtanItem, youtanLink);
     }
 
     if (gamesItem && gamesLink) {
@@ -606,6 +690,37 @@ export default apiInitializer("1.8.0", (api) => {
       }
     }
 
+    if (!navList.querySelector(".nav-item-youtan")) {
+      const youtanItem = document.createElement("li");
+      youtanItem.className = "nav-item-youtan";
+
+      const youtanLink = document.createElement("a");
+      youtanLink.href = "#youtan";
+      youtanLink.textContent = "youtan";
+
+      if (templateNavLink) {
+        youtanLink.className = Array.from(templateNavLink.classList)
+          .filter((className) => className !== "active")
+          .join(" ");
+      }
+
+      youtanLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        activateTab(navList, youtanItem, youtanLink);
+        showYoutanTab();
+      });
+
+      youtanItem.appendChild(youtanLink);
+
+      const newsTab = navList.querySelector(".nav-item-news");
+      if (newsTab?.parentNode) {
+        newsTab.parentNode.insertBefore(youtanItem, newsTab.nextSibling);
+      } else {
+        navList.appendChild(youtanItem);
+      }
+    }
+
     if (!navList.querySelector(".nav-item-games")) {
       const gamesItem = document.createElement("li");
       gamesItem.className = "nav-item-games";
@@ -629,9 +744,9 @@ export default apiInitializer("1.8.0", (api) => {
 
       gamesItem.appendChild(gamesLink);
 
-      const newsTab = navList.querySelector(".nav-item-news");
-      if (newsTab?.parentNode) {
-        newsTab.parentNode.insertBefore(gamesItem, newsTab.nextSibling);
+      const youtanTab = navList.querySelector(".nav-item-youtan");
+      if (youtanTab?.parentNode) {
+        youtanTab.parentNode.insertBefore(gamesItem, youtanTab.nextSibling);
       } else {
         navList.appendChild(gamesItem);
       }
@@ -642,7 +757,7 @@ export default apiInitializer("1.8.0", (api) => {
       navList.addEventListener("click", (event) => {
         const targetLink = event.target.closest("a");
         const href = targetLink?.getAttribute("href");
-        if (!targetLink || href === "#news" || href === "#games") {
+        if (!targetLink || href === "#news" || href === "#youtan" || href === "#games") {
           return;
         }
 
@@ -652,6 +767,12 @@ export default apiInitializer("1.8.0", (api) => {
         const currentNewsLink = currentNewsItem?.querySelector('a[href="#news"]');
         if (currentNewsItem && currentNewsLink) {
           deactivateTab(navList, currentNewsItem, currentNewsLink);
+        }
+
+        const currentYoutanItem = navList.querySelector(".nav-item-youtan");
+        const currentYoutanLink = currentYoutanItem?.querySelector('a[href="#youtan"]');
+        if (currentYoutanItem && currentYoutanLink) {
+          deactivateTab(navList, currentYoutanItem, currentYoutanLink);
         }
 
         const currentGamesItem = navList.querySelector(".nav-item-games");
