@@ -215,9 +215,8 @@ export default apiInitializer("1.8.0", (api) => {
     const itemCountLabel = `${filteredNewsItems.length}`;
     const refreshLink = '<a href="#" class="news-refresh" data-action="refresh-news">refresh</a>';
     const header = `<div class="news-header">${itemCountLabel} fetched ${fetchTimeLabel} &nbsp; ${refreshLink}</div>`;    
-    const dog_div = `<div class="dog-div"><img class="dog-img" src="http://thecatapi.com/api/images/get?api_key=MjM4NDcy&format=src&type=gif"></div>`;
     
-    container.innerHTML = `${header}<ul class="news-list">${items}${dog_div}</ul>`;
+    container.innerHTML = `${header}<ul class="news-list">${items}</ul>`;
   }
 
   function renderGames(container) {
