@@ -1,190 +1,858 @@
-/*
-  Add custom styles for the News tab here
-*/
-.news-tab {
-  padding: 0em;
-}
-.youtan-tab {
-  padding: 0em;
-}
-.games-tab {
-  padding: 0em;
-}
-.news-list {
-  list-style: none;
-  padding-top: 0em;
-  margin: 0;
-}
-.news-item {
-  margin-bottom: 1.5em;
-}
-.news-title {
-  color: #656565;
-  font-weight: 450;
-  font-size: 1em;  
-}
-.news-item a {
-  color: #656565;
-  font-weight: 450;
-  text-decoration: none;
-}
-.news-item a:hover {
-  text-decoration: none;
-}
-.news-meta {
-  margin-top: 0.35em;
-  color: #666;
-  font-size: 0.8em;
-}
-.news-summary {
-  margin: 0.5em 0 0 0;
-  /*color: #555;*/
-  color: gray;
-  font-size: 0.8em;  
-}
-.news-error {
-  color: #c00;
-  font-weight: bold;
-}
-.news-empty {
-  color: #888;
-}
+import { apiInitializer } from "discourse/lib/api";
 
-.news-header {
-  text-align: right;
-  color: #777;
-  font-size: 0.8em;
-  margin: 0 0 0.5em 0;
-}
+export default apiInitializer("1.8.0", (api) => {
+  const hiddenDiscoveryElements = new Map();
+  const discoverySelectorsToHide = [
+    ".topic-list-container",
+    ".list-container .topic-list",
+    ".top-lists",
+    ".list-controls .top-lists",
+    ".period-chooser",
+    ".list-controls .select-kit.period-chooser",
+    ".list-controls .combo-box.period-chooser",
+    ".categories-and-latest .category-list",
+    ".categories-and-latest .latest-topic-list",
+    ".categories-and-latest .categories-list",
+    ".category-list",
+    ".category-boxes",
+    ".latest-topic-list",
+  ];
 
-.news-create-topic,
-.news-copy-button {
-  display: inline-flex;
-  align-items: center;
-  vertical-align: middle;
-}
+  let activeCustomTab = null;
+  const feedStates = {
+    news: createFeedState(),
+    youtan: createFeedState(),
+  };
 
-.news-copy-button {
-  margin-left: 0.4em;
-  padding: 0.15em 0.5em;
-  border: 1px solid #bbb;
-  border-radius: 4px;
-  background: #f7f7f7;
-  color: #555;
-  font-size: 0.75em;
-  line-height: 1.2;
-  cursor: pointer;
-}
-
-.news-copy-button.is-copied {
-  border-color: #3a7;
-  background: #e7f7ef;
-  color: #256;
-}
-
-.news-copy-button.is-copy-failed {
-  border-color: #c55;
-  background: #fdecec;
-  color: #a22;
-}
-
-.nav-item-news.active a,
-.nav-item-news a.active,
-.nav-item-youtan.active a,
-.nav-item-youtan a.active,
-.nav-item-games.active a,
-.nav-item-games a.active {
-  text-decoration: none;
-}
-
-.games-panel {
-  margin-top: 1.5em;
-  cursor: default;
-}
-
-.games-iframe {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  border: 0;
-  cursor: default;
-}
-
-.dog-div {
-  margin-top: 1em;
-  text-align: center;
-}
-
-.dog-img {
-  width: clamp(96px, 16vw, 140px);
-  height: clamp(96px, 16vw, 140px);
-  border-radius: 50%;
-  object-fit: cover;
-  display: inline-block;
-  cursor: pointer;
-}
-
-html.games-tab-active #main-outlet,
-html.games-tab-active #main-outlet * {
-  cursor: auto !important;
-}
-
-html.games-tab-active #main-outlet a,
-html.games-tab-active #main-outlet button,
-html.games-tab-active #main-outlet [role="button"],
-html.games-tab-active #main-outlet .btn,
-html.games-tab-active #main-outlet .news-copy-button {
-  cursor: pointer !important;
-}
-
-html.games-tab-active .loading-container,
-html.games-tab-active .loading-container .spinner,
-html.games-tab-active .loading-container .spinner.small {
-  display: none !important;
-}
-
-@media (max-width: 767px) {
-  .news-tab {
-    padding: 0 0em;
+  function createFeedState() {
+    return {
+      loaded: false,
+      loading: false,
+      fetchPromise: null,
+      items: [],
+      visibleItems: [],
+      error: null,
+      fetchTime: null,
+    };
   }
 
-  .youtan-tab {
-    padding: 0 0em;
+  function getFeedState(tabKey) {
+    return feedStates[tabKey] || feedStates.news;
   }
 
-  .news-list {
-    margin: 0;
-    padding-top: 0em;
-    margin: 0.5em;
+  function getFeedApiUrl(tabKey) {
+    const baseUrl = settings?.api_url?.trim() || "https://formatjsononline.com/api/products";
+
+    if (tabKey !== "youtan") {
+      return baseUrl;
+    }
+
+    return `${baseUrl.replace(/\/$/, "")}/youtan`;
   }
 
-  .news-item {
-    margin-bottom: 1.1em;
+  function isDiscoveryPage() {
+    return /^\/(latest|new|unread|top|categories)?(?:\?.*)?$/.test(window.location.pathname + window.location.search);
   }
 
-  .news-title,
-  .news-item a {
-    color: #656565;    
-    font-size: 1em;
-    line-height: 1.35;
+
+  function getNavList() {
+    return (
+      document.querySelector(".navigation-container .nav-pills") ||
+      document.querySelector(".list-controls .nav-pills") ||
+      document.querySelector(".discovery-navigation .nav-pills")
+    );
   }
 
-  .news-meta {
-    font-size: 0.82em;
-    line-height: 1.3;
+  function getTabContainer(tabClassName) {
+    let container = document.querySelector(`.${tabClassName}`);
+    if (container) {
+      return container;
+    }
+
+    const target =
+      document.querySelector(".list-container") ||
+      document.querySelector(".topic-list-container") ||
+      document.querySelector(".discovery-list-container") ||
+      document.querySelector("#main-outlet");
+
+    if (!target) {
+      return null;
+    }
+
+    container = document.createElement("section");
+    container.className = tabClassName;
+    container.style.display = "none";
+    target.prepend(container);
+    return container;
   }
 
-  .news-summary {
-    font-size: 0.95em;
-    line-height: 1.45;
+  function getNewsContainer() {
+    return getTabContainer("news-tab");
   }
 
-  .games-panel {
-    margin-top: 5em;
+  function getYoutanContainer() {
+    return getTabContainer("youtan-tab");
   }
 
-  .games-iframe {
-    height: 240px;
+  function getGamesContainer() {
+    return getTabContainer("games-tab");
   }
 
-}
+  function setGamesCursorOverride(enabled) {
+    const className = "games-tab-active";
+    document.documentElement.classList.toggle(className, enabled);
+    document.body?.classList.toggle(className, enabled);
+
+    const targets = [
+      document.body,
+      document.documentElement,
+      document.querySelector("#main-outlet"),
+      document.querySelector(".list-container"),
+      document.querySelector(".discovery-list-container"),
+    ];
+
+    targets.forEach((element) => {
+      if (!element) {
+        return;
+      }
+
+      if (enabled) {
+        element.style.setProperty("cursor", "default", "important");
+      } else {
+        element.style.removeProperty("cursor");
+      }
+    });
+  }
+
+  function formatFetchTime(value) {
+    if (!value) {
+      return "Unknown";
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return String(value);
+    }
+
+    const diffMs = Date.now() - parsed.getTime();
+    if (diffMs <= 0) {
+      return "just now";
+    }
+
+    const seconds = Math.floor(diffMs / 1000);
+    if (seconds < 60) {
+      return `${seconds}s ago`;
+    }
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+      return `${minutes}m ago`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+      return `${hours}h ago`;
+    }
+
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  }
+
+  function renderNews(container, tabKey = "news") {
+    if (!container) {
+      return;
+    }
+
+    const feedState = getFeedState(tabKey);
+
+    if (feedState.error) {
+      container.innerHTML = `<div class="news-error">${feedState.error}</div>`;
+      return;
+    }
+
+    if (!feedState.items.length) {
+      container.innerHTML = '<div class="news-empty">No news available.</div>';
+      return;
+    }
+
+    const filteredNewsItems = feedState.items //.filter((item) => item?.publisher !== "半岛");
+
+    if (!filteredNewsItems.length) {
+      container.innerHTML = '<div class="news-empty">No news available.</div>';
+      return;
+    }
+
+    feedState.visibleItems = filteredNewsItems;
+
+    const createTopicIcon = `<svg class="fa d-icon d-icon-d-chat svg-icon fa-width-auto svg-string" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><use href="#comment"></use></svg>`;
+
+    const copyIcon = `<svg class="fa d-icon d-icon-d-copy svg-icon fa-width-auto svg-string" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><use href="#copy"></use></svg>`;
+
+    const items = filteredNewsItems
+      .map((item, index) => {
+        // get its fields for a news item
+        const title = item.title || "Untitled";
+        const publisher = item.publisher || "Unknown";
+        const url = item.url || "#";
+        const descriptionText = item.description || "";
+        const pub_date = item.pub_date ? new Date(item.pub_date).toLocaleString() : "";
+
+        // for creating a topic for the news
+        const topicBody = `\n\n>${descriptionText}${descriptionText ? "\n\n" : ""}\n${url}`;
+        const createTopicUrl = `https://www.freeblueplanet.com/new-topic?title=${encodeURIComponent(title)}&body=${encodeURIComponent(topicBody)}`;
+        // target="_blank"  // this open a new windows, but slower.
+        const createTopicLink = `<span class="news-create-topic"><a href="${createTopicUrl}" rel="noopener noreferrer" title="发帖聊天">${createTopicIcon}</a></span>`;
+        const copyButton = `<span class="news-copy-button" type="button" data-index="${index}" title="复制到剪贴板">${copyIcon}</span>`;
+
+        // meta is the subtitle line, description is the news summary
+        const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""} &nbsp; ${createTopicLink} &nbsp; ${copyButton}</div>`;
+        const description = descriptionText ? `<p class="news-summary">${descriptionText}</p>` : "";
+        return `<li class="news-item"><hr><div class="news-title"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
+      })
+      .join("");
+
+    const fetchTimeLabel = formatFetchTime(feedState.fetchTime);
+    const itemCountLabel = `${filteredNewsItems.length}`;
+    const refreshLink = '<a href="#" class="news-refresh" data-action="refresh-news">refresh</a>';
+    const header = `<div class="news-header">${itemCountLabel} fetched ${fetchTimeLabel} &nbsp; ${refreshLink}</div>`;    
+    const dog_div = `<div class="dog-div"><img class="dog-img" src="http://thecatapi.com/api/images/get?api_key=MjM4NDcy&format=src&type=gif"></div>`;
+    container.innerHTML = `${header}<ul class="news-list">${items}</ul>${dog_div}`;
+  }
+
+  function renderGames(container) {
+    if (!container) {
+      return;
+    }
+
+    container.style.cursor = "default";
+
+    container.innerHTML = `
+      <div class="games-panel">
+        <iframe class="games-iframe" allowfullscreen="true" scrolling="no" width="100%" height="400"
+          src="https://www.spiele-umsonst.de/azad/downloads/html5games/skill/bubbleshooterclassic/" frameborder="0"></iframe>
+      </div>
+    `;
+  }
+
+  function formatNewsItemText(item) {
+    const title = item?.title || "Untitled";
+    // const publisher = item?.publisher || "Unknown";
+    // const pub_date = item?.pub_date ? new Date(item.pub_date).toLocaleString() : "";
+    const descriptionText = item?.description || "";
+    const url = item?.url || "";
+    // const meta = `${publisher}${pub_date ? ` • ${pub_date}` : ""}`;
+
+    // const parts = [title, meta];
+    // if (descriptionText) {
+    //   parts.push(descriptionText);
+    // }
+    // if (url) {
+    //   parts.push(url);
+    // }
+    // return parts.join("\n");
+
+    const ret = ">" + title + "\n>" + descriptionText + "\n\n" + url
+    return ret
+  }
+
+  function copyTextToClipboard(text) {
+    if (navigator.clipboard?.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+
+    return new Promise((resolve, reject) => {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "absolute";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      if (ok) {
+        resolve();
+      } else {
+        reject(new Error("Copy failed"));
+      }
+    });
+  }
+
+  function ensureCopyHandler(container, tabKey) {
+    if (!container || container.dataset.copyHandlerBound === "true") {
+      return;
+    }
+
+    container.dataset.copyHandlerBound = "true";
+    container.addEventListener("click", (event) => {
+      const button = event.target.closest(".news-copy-button");
+      if (!button) {
+        return;
+      }
+
+      event.preventDefault();
+
+      const index = Number(button.dataset.index);
+      const item = getFeedState(tabKey).visibleItems[index];
+      if (!item) {
+        return;
+      }
+
+      const text = formatNewsItemText(item);
+      copyTextToClipboard(text)
+        .then(() => {
+          button.classList.add("is-copied");
+          const original = button.textContent;
+          button.textContent = "已复制";
+          setTimeout(() => {
+            button.textContent = original;
+            button.classList.remove("is-copied");
+          }, 1500);
+        })
+        .catch(() => {
+          button.classList.add("is-copy-failed");
+          setTimeout(() => button.classList.remove("is-copy-failed"), 1500);
+        });
+    });
+  }
+
+  function ensureRefreshHandler(container, tabKey) {
+    if (!container || container.dataset.refreshHandlerBound === "true") {
+      return;
+    }
+
+    container.dataset.refreshHandlerBound = "true";
+    container.addEventListener("click", (event) => {
+      const refreshLink = event.target.closest(".news-refresh");
+      if (!refreshLink) {
+        return;
+      }
+
+      event.preventDefault();
+      fetchNews(tabKey, container, { force: true });
+    });
+  }
+
+  function ensureDogReloadHandler(container) {
+    if (!container || container.dataset.dogReloadHandlerBound === "true") {
+      return;
+    }
+
+    container.dataset.dogReloadHandlerBound = "true";
+    container.addEventListener("click", (event) => {
+      const dogImage = event.target.closest(".dog-img");
+      if (!dogImage) {
+        return;
+      }
+
+      const baseSrc = dogImage.dataset.baseSrc || dogImage.getAttribute("src") || "";
+      if (!baseSrc) {
+        return;
+      }
+
+      dogImage.dataset.baseSrc = baseSrc;
+      const separator = baseSrc.includes("?") ? "&" : "?";
+      dogImage.src = `${baseSrc}${separator}_reload=${Date.now()}`;
+    });
+  }
+
+
+  // {
+  //   "success": true,
+  //   "data": {
+  //     "news": [
+  //       {
+  //         "title": "乌克兰被俘朝鲜士兵想去韩国 首尔态度迟疑",
+  //         "publisher": "德国之声",
+  //         "url": "https://www.dw.com/zh/乌克兰被俘朝鲜士兵想去韩国-首尔态度迟疑/a-76094690",
+  //         "pub_date": "2026-02-23T15:19:00Z",
+  //         "description": "两名在乌克兰被俘的朝鲜士兵表示希望前往韩国，而不是返回朝鲜面对可能的严厉惩罚。相关人士指出，朝鲜政权甚至可能选择惩罚其家属。人权人士批评首尔在接收问题上行动迟缓。"
+  //       },
+  //       ...    
+  //     ],
+  // }  
+
+
+  function fetchNews(tabKey = "news", container, { force = false } = {}) {
+    const feedState = getFeedState(tabKey);
+
+    if (force) {
+      feedState.loaded = false;
+      feedState.error = null;
+    }
+
+    if (feedState.loaded) {
+      if (container) {
+        renderNews(container, tabKey);
+      }
+      return Promise.resolve();
+    }
+
+    if (container && !feedState.loading) {
+      container.innerHTML = '<div class="news-empty">Fetching latest news from several sources... it may take several seconds.</div>';
+    }
+
+    if (feedState.loading && feedState.fetchPromise) {
+      if (container) {
+        container.innerHTML = '<div class="news-empty">Fetching latest news from several sources... it may take several seconds.</div>';
+      }
+
+      return feedState.fetchPromise.then(() => {
+        if (container) {
+          renderNews(container, tabKey);
+        }
+      });
+    }
+
+    feedState.loading = true;
+    const apiUrl = getFeedApiUrl(tabKey);
+
+    feedState.fetchPromise = fetch(apiUrl)
+      .then((response) => response.json())
+      .then((data) => {
+        feedState.fetchTime = data?.fetchTime || new Date().toGMTString();
+        feedState.items = Array.isArray(data?.data?.news) ? data.data.news : [];
+        feedState.error = feedState.items.length ? null : "No news found in data.news.";
+        feedState.loaded = true;
+      })
+      .catch(() => {
+        feedState.items = [];
+        feedState.error = "Failed to load news.";
+        feedState.loaded = true;
+      })
+      .finally(() => {
+        feedState.loading = false;
+      });
+
+    return feedState.fetchPromise.then(() => {
+      if (container) {
+        renderNews(container, tabKey);
+      }
+    });
+  }
+
+  /**
+   * Preloads news data in the background if certain conditions are met:
+   * - News has not been loaded or is not currently loading.
+   * - The user is on the discovery page.
+   * Uses `requestIdleCallback` if available, otherwise falls back to `setTimeout`.
+   */
+  function preloadNewsInBackground() {
+    if (!isDiscoveryPage()) {
+      return;
+    }
+
+    const runPreload = () => {
+      ["news", "youtan"].forEach((tabKey) => {
+        const feedState = getFeedState(tabKey);
+        if (!feedState.loaded && !feedState.loading) {
+          fetchNews(tabKey);
+        }
+      });
+    };
+
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(runPreload, { timeout: 1500 });
+    } else {
+      setTimeout(runPreload, 0);
+    }
+  }
+
+  function showNewsTab() {
+    const container = getNewsContainer();
+    if (!container) {
+      return;
+    }
+
+    setGamesCursorOverride(false);
+
+    ensureCopyHandler(container, "news");
+    ensureRefreshHandler(container, "news");
+    ensureDogReloadHandler(container);
+
+    activeCustomTab = "news";
+
+    const youtanContainer = document.querySelector(".youtan-tab");
+    if (youtanContainer) {
+      youtanContainer.style.display = "none";
+    }
+
+    const gamesContainer = document.querySelector(".games-tab");
+    if (gamesContainer) {
+      gamesContainer.style.display = "none";
+    }
+
+    container.style.display = "block";
+
+    discoverySelectorsToHide.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((element) => {
+        if (!element || element.closest(".news-tab") || element.contains(container)) {
+          return;
+        }
+
+        if (!hiddenDiscoveryElements.has(element)) {
+          hiddenDiscoveryElements.set(element, element.style.display || "");
+        }
+
+        element.style.display = "none";
+      });
+    });
+
+    fetchNews("news", container);
+  }
+
+  function showYoutanTab() {
+    const container = getYoutanContainer();
+    if (!container) {
+      return;
+    }
+
+    setGamesCursorOverride(false);
+
+    ensureCopyHandler(container, "youtan");
+    ensureRefreshHandler(container, "youtan");
+    ensureDogReloadHandler(container);
+
+    activeCustomTab = "youtan";
+
+    const newsContainer = document.querySelector(".news-tab");
+    if (newsContainer) {
+      newsContainer.style.display = "none";
+    }
+
+    const gamesContainer = document.querySelector(".games-tab");
+    if (gamesContainer) {
+      gamesContainer.style.display = "none";
+    }
+
+    container.style.display = "block";
+
+    discoverySelectorsToHide.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((element) => {
+        if (!element || element.closest(".youtan-tab") || element.contains(container)) {
+          return;
+        }
+
+        if (!hiddenDiscoveryElements.has(element)) {
+          hiddenDiscoveryElements.set(element, element.style.display || "");
+        }
+
+        element.style.display = "none";
+      });
+    });
+
+    fetchNews("youtan", container);
+  }
+
+  function showGamesTab() {
+    const container = getGamesContainer();
+    if (!container) {
+      return;
+    }
+
+    activeCustomTab = "games";
+
+    const newsContainer = document.querySelector(".news-tab");
+    if (newsContainer) {
+      newsContainer.style.display = "none";
+    }
+
+    const youtanContainer = document.querySelector(".youtan-tab");
+    if (youtanContainer) {
+      youtanContainer.style.display = "none";
+    }
+
+    container.style.display = "block";
+    container.style.cursor = "default";
+    setGamesCursorOverride(true);
+
+    discoverySelectorsToHide.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((element) => {
+        if (!element || element.closest(".games-tab") || element.contains(container)) {
+          return;
+        }
+
+        if (!hiddenDiscoveryElements.has(element)) {
+          hiddenDiscoveryElements.set(element, element.style.display || "");
+        }
+
+        element.style.display = "none";
+      });
+    });
+
+    renderGames(container);
+  }
+
+  function hideNewsTab() {
+    setGamesCursorOverride(false);
+
+    const container = document.querySelector(".news-tab");
+    if (container) {
+      container.style.display = "none";
+    }
+
+    const youtanContainer = document.querySelector(".youtan-tab");
+    if (youtanContainer) {
+      youtanContainer.style.display = "none";
+    }
+
+    const gamesContainer = document.querySelector(".games-tab");
+    if (gamesContainer) {
+      const iframe = gamesContainer.querySelector(".games-iframe");
+      if (iframe) {
+        iframe.remove();
+      }
+      gamesContainer.innerHTML = "";
+      gamesContainer.style.display = "none";
+    }
+
+    activeCustomTab = null;
+
+    hiddenDiscoveryElements.forEach((previousDisplay, element) => {
+      if (!element.isConnected) {
+        return;
+      }
+
+      element.style.display = previousDisplay;
+    });
+
+    hiddenDiscoveryElements.clear();
+  }
+
+  function activateTab(navList, tabItem, link) {
+    navList.querySelectorAll("li").forEach((li) => li.classList.remove("active"));
+    navList.querySelectorAll("a").forEach((a) => a.classList.remove("active"));
+    tabItem.classList.add("active");
+    link.classList.add("active");
+  }
+
+  function deactivateTab(navList, tabItem, link) {
+    tabItem.classList.remove("active");
+    link.classList.remove("active");
+
+    const hasOtherActive = navList.querySelector("li.active, a.active");
+    if (!hasOtherActive) {
+      const latestLink = navList.querySelector('a[href*="/latest"]');
+      if (latestLink) {
+        latestLink.classList.add("active");
+        latestLink.closest("li")?.classList.add("active");
+      }
+    }
+  }
+
+  function syncNewsTabState() {
+    const navList = getNavList();
+    const newsItem = navList?.querySelector(".nav-item-news");
+    const link = newsItem?.querySelector('a[href="#news"]');
+    const youtanItem = navList?.querySelector(".nav-item-youtan");
+    const youtanLink = youtanItem?.querySelector('a[href="#youtan"]');
+    const gamesItem = navList?.querySelector(".nav-item-games");
+    const gamesLink = gamesItem?.querySelector('a[href="#games"]');
+
+    if (!navList) {
+      return;
+    }
+
+    if (activeCustomTab === "news" && newsItem && link) {
+      activateTab(navList, newsItem, link);
+      if (youtanItem && youtanLink) {
+        deactivateTab(navList, youtanItem, youtanLink);
+      }
+      if (gamesItem && gamesLink) {
+        deactivateTab(navList, gamesItem, gamesLink);
+      }
+      return;
+    }
+
+    if (activeCustomTab === "youtan" && youtanItem && youtanLink) {
+      activateTab(navList, youtanItem, youtanLink);
+      if (newsItem && link) {
+        deactivateTab(navList, newsItem, link);
+      }
+      if (gamesItem && gamesLink) {
+        deactivateTab(navList, gamesItem, gamesLink);
+      }
+      return;
+    }
+
+    if (activeCustomTab === "games" && gamesItem && gamesLink) {
+      activateTab(navList, gamesItem, gamesLink);
+      if (newsItem && link) {
+        deactivateTab(navList, newsItem, link);
+      }
+      if (youtanItem && youtanLink) {
+        deactivateTab(navList, youtanItem, youtanLink);
+      }
+      return;
+    }
+
+    if (newsItem && link) {
+      deactivateTab(navList, newsItem, link);
+    }
+
+    if (youtanItem && youtanLink) {
+      deactivateTab(navList, youtanItem, youtanLink);
+    }
+
+    if (gamesItem && gamesLink) {
+      deactivateTab(navList, gamesItem, gamesLink);
+    }
+  }
+
+  function resetNewsMode() {
+    hideNewsTab();
+    syncNewsTabState();
+  }
+
+  function injectNewsTab() {
+    if (!isDiscoveryPage()) {
+      return;
+    }
+
+    const navList = getNavList();
+    if (!navList) {
+      return;
+    }
+
+    const templateNavLink = navList.querySelector("a");
+    if (!navList.querySelector(".nav-item-news")) {
+      const newsItem = document.createElement("li");
+      newsItem.className = "nav-item-news";
+
+      const link = document.createElement("a");
+      link.href = "#news";
+      link.textContent = "新闻";
+
+      if (templateNavLink) {
+        link.className = Array.from(templateNavLink.classList)
+          .filter((className) => className !== "active")
+          .join(" ");
+      }
+
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        activateTab(navList, newsItem, link);
+        showNewsTab();
+      });
+
+      newsItem.appendChild(link);
+
+      const categoriesTab = Array.from(navList.querySelectorAll("li")).find((li) =>
+        li.querySelector('a[href*="/categories"]')
+      );
+
+      if (categoriesTab?.parentNode) {
+        categoriesTab.parentNode.insertBefore(newsItem, categoriesTab.nextSibling);
+      } else {
+        navList.appendChild(newsItem);
+      }
+    }
+
+    if (!navList.querySelector(".nav-item-youtan")) {
+      const youtanItem = document.createElement("li");
+      youtanItem.className = "nav-item-youtan";
+
+      const youtanLink = document.createElement("a");
+      youtanLink.href = "#youtan";
+      youtanLink.textContent = "友坛";
+
+      if (templateNavLink) {
+        youtanLink.className = Array.from(templateNavLink.classList)
+          .filter((className) => className !== "active")
+          .join(" ");
+      }
+
+      youtanLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        activateTab(navList, youtanItem, youtanLink);
+        showYoutanTab();
+      });
+
+      youtanItem.appendChild(youtanLink);
+
+      const newsTab = navList.querySelector(".nav-item-news");
+      if (newsTab?.parentNode) {
+        newsTab.parentNode.insertBefore(youtanItem, newsTab.nextSibling);
+      } else {
+        navList.appendChild(youtanItem);
+      }
+    }
+
+    if (!navList.querySelector(".nav-item-games")) {
+      const gamesItem = document.createElement("li");
+      gamesItem.className = "nav-item-games";
+
+      const gamesLink = document.createElement("a");
+      gamesLink.href = "#games";
+      gamesLink.textContent = "游戏";
+
+      if (templateNavLink) {
+        gamesLink.className = Array.from(templateNavLink.classList)
+          .filter((className) => className !== "active")
+          .join(" ");
+      }
+
+      gamesLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        activateTab(navList, gamesItem, gamesLink);
+        showGamesTab();
+      });
+
+      gamesItem.appendChild(gamesLink);
+
+      const youtanTab = navList.querySelector(".nav-item-youtan");
+      if (youtanTab?.parentNode) {
+        youtanTab.parentNode.insertBefore(gamesItem, youtanTab.nextSibling);
+      } else {
+        navList.appendChild(gamesItem);
+      }
+    }
+
+    if (!navList.dataset.newsTabListenerBound) {
+      navList.dataset.newsTabListenerBound = "true";
+      navList.addEventListener("click", (event) => {
+        const targetLink = event.target.closest("a");
+        const href = targetLink?.getAttribute("href");
+        if (!targetLink || href === "#news" || href === "#youtan" || href === "#games") {
+          return;
+        }
+
+        hideNewsTab();
+
+        const currentNewsItem = navList.querySelector(".nav-item-news");
+        const currentNewsLink = currentNewsItem?.querySelector('a[href="#news"]');
+        if (currentNewsItem && currentNewsLink) {
+          deactivateTab(navList, currentNewsItem, currentNewsLink);
+        }
+
+        const currentYoutanItem = navList.querySelector(".nav-item-youtan");
+        const currentYoutanLink = currentYoutanItem?.querySelector('a[href="#youtan"]');
+        if (currentYoutanItem && currentYoutanLink) {
+          deactivateTab(navList, currentYoutanItem, currentYoutanLink);
+        }
+
+        const currentGamesItem = navList.querySelector(".nav-item-games");
+        const currentGamesLink = currentGamesItem?.querySelector('a[href="#games"]');
+        if (currentGamesItem && currentGamesLink) {
+          deactivateTab(navList, currentGamesItem, currentGamesLink);
+        }
+      });
+    }
+  }
+
+  api.onPageChange(() => {
+    resetNewsMode();
+    setTimeout(() => {
+      injectNewsTab();
+      syncNewsTabState();
+    }, 0);
+    preloadNewsInBackground();
+  });
+
+  window.addEventListener("resize", () => {
+    injectNewsTab();
+  });
+});
