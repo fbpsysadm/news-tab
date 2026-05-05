@@ -116,10 +116,8 @@
 }
 
 .dog-img {
-  /* width: clamp(192px, 32vw, 280px); */
-  /* height: clamp(192px, 32vw, 280px); */
-  /* height: 300; */
-  width: 400;
+  width: 500px;
+  height: 500px;
   border-radius: 50%;
   object-fit: cover;
   display: inline-block;
@@ -187,6 +185,12 @@ html.games-tab-active .loading-container .spinner.small {
 
   .games-iframe {
     height: 240px;
+  }
+
+  .dog-img {
+    width: 100vw;
+    height: 100vw;
+    max-width: 100%;
   }
 
 }
