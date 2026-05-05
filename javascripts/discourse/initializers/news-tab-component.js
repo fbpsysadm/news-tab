@@ -375,6 +375,8 @@ export default apiInitializer("1.8.0", (api) => {
 
   function fetchNews(tabKey = "news", container, { force = false } = {}) {
     const feedState = getFeedState(tabKey);
+    const loadingMessage = "Fetching latest news from several sources... it may take several seconds.";
+    const loadingDogDiv = `<div class="dog-div"><img class="dog-img" src="http://thecatapi.com/api/images/get?api_key=MjM4NDcy&format=src&type=gif"></div>`;
 
     if (force) {
       feedState.loaded = false;
@@ -389,12 +391,12 @@ export default apiInitializer("1.8.0", (api) => {
     }
 
     if (container && !feedState.loading) {
-      container.innerHTML = '<div class="news-empty">Fetching latest news from several sources... it may take several seconds.</div>';
+      container.innerHTML = `<div class="news-empty">${loadingMessage}</div>${loadingDogDiv}`;
     }
 
     if (feedState.loading && feedState.fetchPromise) {
       if (container) {
-        container.innerHTML = '<div class="news-empty">Fetching latest news from several sources... it may take several seconds.</div>';
+        container.innerHTML = `<div class="news-empty">${loadingMessage}</div>${loadingDogDiv}`;
       }
 
       return feedState.fetchPromise.then(() => {
