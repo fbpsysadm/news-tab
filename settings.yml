@@ -1,4 +1,11 @@
 api_url:
-  default: "https://w2wlljro4fx2ihbvj4bkkrmuy0poeus.lambda-url.us-east-2.on.aws/"
+  default: "https://w2wlljro4fx2ihbvj4bkkrmuy0poeus.lambda-url.us-east-2.on.aws/"  # invalid one
   type: string
   description: "News API endpoint URL returning data.news"
+
+
+cat_api_key:
+  default: "MM4NDcy"  # an invalid one.
+  type: string
+  secret: true
+  description: "TheCatAPI key used for dog-img GIF endpoint"
