@@ -54,6 +54,16 @@ export default apiInitializer("1.8.0", (api) => {
     return /^\/(latest|new|unread|top|categories)?(?:\?.*)?$/.test(window.location.pathname + window.location.search);
   }
 
+  function getDogImageUrl() {
+    const apiKey = settings?.cat_api_key?.trim();
+    const baseUrl = "https://thecatapi.com/api/images/get?format=src&type=gif";
+    return apiKey ? `${baseUrl}&api_key=${encodeURIComponent(apiKey)}` : baseUrl;
+  }
+
+  function renderDogDiv() {
+    return `<div class="dog-div"><img class="dog-img" src="${getDogImageUrl()}"></div>`;
+  }
+
 
   function getNavList() {
     return (
@@ -215,7 +225,7 @@ export default apiInitializer("1.8.0", (api) => {
     const itemCountLabel = `${filteredNewsItems.length}`;
     const refreshLink = '<a href="#" class="news-refresh" data-action="refresh-news">refresh</a>';
     const header = `<div class="news-header">${itemCountLabel} fetched ${fetchTimeLabel} &nbsp; ${refreshLink}</div>`;    
-    const dog_div = `<div class="dog-div"><img class="dog-img" src="http://thecatapi.com/api/images/get?api_key=MjM4NDcy&format=src&type=gif"></div>`;
+    const dog_div = renderDogDiv();
     const footer = tabKey === "news" ? dog_div : "";
     container.innerHTML = `${header}<ul class="news-list">${items}</ul><br><br>${footer}`;
   }
@@ -377,7 +387,7 @@ export default apiInitializer("1.8.0", (api) => {
   function fetchNews(tabKey = "news", container, { force = false } = {}) {
     const feedState = getFeedState(tabKey);
     const loadingMessage = "Fetching latest news from several sources... it may take several seconds.";
-    const loadingDogDiv = `<div class="dog-div"><br><br><br><img class="dog-img" src="http://thecatapi.com/api/images/get?api_key=MjM4NDcy&format=src&type=gif"></div>`;
+    const loadingDogDiv = renderDogDiv();
 
     if (force) {
       feedState.loaded = false;
