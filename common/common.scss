@@ -110,6 +110,20 @@
   cursor: default;
 }
 
+.dog-div {
+  margin-top: 1em;
+  text-align: center;
+}
+
+.dog-img {
+  width: clamp(96px, 16vw, 140px);
+  height: clamp(96px, 16vw, 140px);
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+  cursor: pointer;
+}
+
 html.games-tab-active #main-outlet,
 html.games-tab-active #main-outlet * {
   cursor: auto !important;
@@ -172,5 +186,5 @@ html.games-tab-active .loading-container .spinner.small {
   .games-iframe {
     height: 240px;
   }
-  
+
 }
