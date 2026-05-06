@@ -217,7 +217,7 @@ export default apiInitializer("1.8.0", (api) => {
         // meta is the subtitle line, description is the news summary
         const meta = `<div class="news-meta">${publisher}${pub_date ? ` • ${pub_date}` : ""} &nbsp; ${createTopicLink} &nbsp; ${copyButton}</div>`;
         const description = descriptionText ? `<p class="news-summary">${descriptionText}</p>` : "";
-        return `<li class="news-item"><hr><div class="news-title"><a href="${url}" target="_blank">${title}</a></div>${meta}${description}</li>`;
+        return `<li class="news-item"><hr><div class="news-title"><a href="${url}" target="_blank" referrerpolicy="no-referrer">${title}</a></div>${meta}${description}</li>`;
       })
       .join("");
 
